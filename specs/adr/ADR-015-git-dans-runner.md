@@ -43,6 +43,12 @@ Complète : CLAUDE.md §1 (images et dépendances épinglées), ADR-003 (runner 
    est donc pertinente pour la version appliquée sur `dev`. Point ouvert de ADR-013 (n° 4) : clos.
 6. **Référence future** : le commit consigné dans `mise-en-service.md` à chaque mise en service (ADR-011). La policy lit
    ce commit ; `dae9044` est la valeur de l'itération 002 uniquement.
+6bis. **Référence figée de l'itération 002 (complément du chef de projet, 2026-11-17)** : pour les migrations `001` à `005`,
+   `dae9044` est la référence **figée** de l'itération 002. Elle ne change pas, même si `mise-en-service.md` consigne
+   ensuite un autre commit pour la même itération. `dfbc020` est **identique** à `dae9044` sur les migrations `001` à `005`
+   (vérifié par le chef de projet) : le choix de `dae9044` plutôt que `dfbc020` ne change donc pas le résultat de la
+   policy 29 (c). Le contrôle (c) se rejoue par `git show dae9044:app/db/migrations/00N_<sujet>.sql` (N de 1 à 5), sans
+   autre commit de référence pour cette itération.
 7. **Hôte** : git est déjà requis sur l'hôte (SPEC-004.5). Aucun changement.
 
 ## Champ à renseigner par l'action

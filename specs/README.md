@@ -7,7 +7,7 @@
 | SPEC-001 | Pile Supabase auto-hébergée et passerelle unique | 002 | CA-002-1, 2, 3, 6, 7, 11, 33 | actif (amendé tour 1 complément : 001.3, 001.4, 001.11 ; tour 2 : 001.15 nouvelle, puis (b) et (d) et policy n° 25, arbitrage 2026-11-17 ; décision 2026-11-17 : 001.15 (d) amendé, (e) ajouté, policy n° 28 ; tour 4 : 001.15 (b) précisé, audit hors runner, ADR-014 ; tour 4 suite : garde esbuild « cas C gardé » dans 001.15 (b) et (d)) |
 | SPEC-002 | Modèle de données, RLS, charge projetée, entraide | 002 | CA-002-4, 6, 8 à 36 | actif |
 | SPEC-003 | Compte administrateur initial et secrets | 002 | CA-002-2, 4, 5, 33 | actif (amendé : 003.9 passe en `[T]` ; tour 3 : 003.5 amendé, 003.10 à 003.12 nouvelles, ADR-012 ; tour 4 : [R] de 003.10 et 003.12 (d) réécrits pour la pile service, ADR-013 D-6 ; tour 4 suite : canal `PUT /auth/v1/user` documenté dans 003.10, ADR-012 §6) |
-| SPEC-004 | Piles dev / service, persistance, sauvegarde, contrat `./dev` | 002 | CA-002-1, 2, 33, 36 | actif (amendé tour 1 complément : 004.7 à 004.10, 004.16 ; tour 2 : 004.7 restart (ADR-009), 004.11 env_file longue, 004.17 nouvelle ; tour 2 complément : renommage `secrets.py` → `gen_secrets.py` ; tour 3 : 004.18 nouvelle, ADR-011 ; tour 3 : 004.8 et 004.13 amendés, ADR-012 ; tour 4 suite : 004.1 (`./dev audit-npm`, ADR-014)) |
+| SPEC-004 | Piles dev / service, persistance, sauvegarde, contrat `./dev` | 002 | CA-002-1, 2, 33, 36 | actif (amendé tour 1 complément : 004.7 à 004.10, 004.16 ; tour 2 : 004.7 restart (ADR-009), 004.11 env_file longue, 004.17 nouvelle ; tour 2 complément : renommage `secrets.py` → `gen_secrets.py` ; tour 3 : 004.18 nouvelle, ADR-011 ; tour 3 : 004.8 et 004.13 amendés, ADR-012 ; tour 4 suite : 004.1 (`./dev audit-npm`, ADR-014) ; complément 2026-11-17 : 004.1 précisé, canal toolbox ADR-014) |
 | SPEC-005 | Interface web (recette clavier/souris) | 002 | CA-002-5 à 8, 10, 12 à 15, 17 à 19, 21 à 25, 27 à 30, 32, 34, 35 ; tour 3 : 27, 28, 34 précisés ; 37 à 39 proposés | actif (tour 3 : 005.6, 005.7, 005.62, 005.63 nouvelles ; 005.1, 005.33, 005.40, 005.60 amendées ; messages M-1 à M-6) |
 | SPEC-006 | Plan de vérification (test / client / policy / RA) | 002 | CA-002-1 à 36 | actif (amendé : §1, §2, §3, §5 ; tour 2 : §2, §3 ; arbitrage 2026-11-17 : CA-002-1 (c) en [P], CA-002-9 avec 005.61, policies renumérotées n° 25 à 27 ; décision 2026-11-17 : §2 CA-002-2, §3 policy n° 28 ; tour 3 : §2 CA-002-27, 28, 33, 34 et CA-002-37 à 39 proposés, §3 policies n° 29 à 31 ; tour 4 : §2 CA-002-1 (écart accepté, ADR-013 D-8), §3 policies 25 et 16 (c) précisées, policy n° 35 **validée** (item 19), garde esbuild « cas C gardé » (item 13)) |
 
@@ -28,8 +28,8 @@
 | ADR-011 | Migrations additives et non destructives sur données réelles | accepté (tour 3, 2026-11-17) ; amende SPEC-004.12 par SPEC-004.18 ; policy n° 29 ; référence de comparaison précisée par ADR-015 |
 | ADR-012 | Seed admin sans écrasement : la base fait foi après création | accepté (tour 3, 2026-11-17) ; amende ADR-003, SPEC-003.5, SPEC-004.8, SPEC-004.13 ; SPEC-003.10 à 003.12 (révisés : 003.10/003.11 vérifiés par stub GoTrue sans deploy) ; §6 : canal `PUT /auth/v1/user` **accepté et documenté pour 002** (ADR-013 D-5, interface au backlog 003) ; point à vérifier : champ `email_confirmed_at` de GoTrue v2.170.0 (premier contrôle réel au second `deploy service`) |
 | ADR-013 | Trace des décisions du chef de projet (itération 002, 2026-11-17) | accepté (trace) ; D-1 garde esbuild **tranché** (« cas C gardé »), D-5 canal `PUT /auth/v1/user` **accepté** pour 002 ; seul point ouvert : version apt de git (point 6) |
-| ADR-014 | Audit npm produit hors runner (`./dev audit-npm`, sans socket Docker) | accepté ; amende ADR-010 §5, SPEC-001.15 (b), SPEC-006 §3 (policy 25) |
-| ADR-015 | git dans l'image du runner (apt, version exacte) pour la policy 29 | accepté ; amende ADR-011 (référence), SPEC-006 §3 (policy 29, item 16 (c)) ; `dae9044` **vérifié** (existe ; `001` à `005` identiques dans `dfbc020`, `dae9044`, `HEAD`) ; version apt à relever (ouvert) |
+| ADR-014 | Audit npm produit hors runner (`./dev audit-npm`, sans socket Docker) | accepté ; amende ADR-010 §5, SPEC-001.15 (b), SPEC-006 §3 (policy 25) ; § « Canal » : passage par la toolbox (`tools/bin/npm`), autorisé à tout agent (complément 2026-11-17) |
+| ADR-015 | git dans l'image du runner (apt, version exacte) pour la policy 29 | accepté ; amende ADR-011 (référence), SPEC-006 §3 (policy 29, item 16 (c)) ; `dae9044` **référence figée** de l'itération 002 pour `001` à `005` (§6bis, `dfbc020` identique sur ces fichiers) ; version apt à relever (ouvert) |
 
 Notes :
 - SPEC-000.1 reste valable (`/` répond 200) ; la publication du port est désormais précisée par ADR-007
@@ -243,3 +243,14 @@ Fichiers modifiés : `adr/ADR-010`, `adr/ADR-012`, `adr/ADR-013`, `adr/ADR-014`,
 - Montée de `@supabase/supabase-js` (auth-js ≥ 2.70.0) et d'esbuild 0.28.x (ADR-010, points 4 et 5).
 
 **Point ouvert restant** : version apt de git à relever à la première construction de l'image runner (ADR-015, ADR-013 point 6).
+
+## Complément de l'architecte, itération 002 (2026-11-17, ordre du chef de projet)
+
+Périmètre : `specs/` uniquement. Aucun autre fichier modifié.
+- **ADR-014** : section « Canal de l'audit » ajoutée. `./dev audit-npm` passe par `tools/bin/npm` → `tools/bin/_dockerized`
+  (`docker run` d'une image épinglée du registre). Canal autorisé à tout agent ; le garde-fou ne vise que les `docker run` directs.
+- **ADR-015** : §6bis ajouté. `dae9044` est la référence **figée** de l'itération 002 pour `001` à `005` ; `dfbc020` identique (vérifié par le chef de projet).
+- **SPEC-004.1** : précisé (toolbox, ADR-014). SPEC-004 en-tête et SPEC-004.1 cohérents avec ADR-014.
+- **Cohérence** : README, SPEC-004.1, ADR-014 et ADR-015 sont alignés. Vérification faite par relecture des fichiers (aucun
+  accès git dans cette session) ; l'existence de `dae9044` et l'identité de `001` à `005` restent celles vérifiées par le chef de projet.
+- **Ouvert** : version apt de git (ADR-015). Rien d'autre.

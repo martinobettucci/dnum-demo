@@ -308,3 +308,12 @@ Règle : aucun `reset` de dev avant la fin de la période D4 et la validation de
 - [ ] Page de maintenance et règle LAN prêtes, testées hors fenêtre
 - [ ] Copie hors hôte de la sauvegarde finale préparée (D5)
 - [ ] Heure de fenêtre et information des utilisateurs confirmées
+
+## Écart E9 — Empreinte de l'audit npm consignée
+
+Mise en service assurée exclusivement par le responsable applicatif. Aucun autre agent ne démarre, n'arrête ni ne détruit la pile : adressez vos demandes au chef de projet.
+
+- Audit : `iterations/002/policies/audit-npm.meta.json`, `"statut": "reussie"`, date `2026-11-17T13:40:30+00:00`, image `node:22.12.0-alpine`.
+- Fichier lock : `app/web/package-lock.json`, sha256 `2bbd9f50bff63cd1e3a5dfc333ae786690fccdc4753c3470c70d410ce53f9eb9`. Vérifié à la rédaction : le sha256 du fichier actuel est identique (aucune dérive depuis l'audit).
+- Résultat de la policy `FRONT-audit-npm` (`iterations/002/policies/results.json`) : respectée, rc 0, sha256 du lock concordant. Le rapport `audit-npm.json` remonte 3 paquets (avis GHSA-67mh-4wv8-2f99 sur esbuild, GHSA-8r88-6cj9-9fh5 sur auth-js, et un troisième).
+- Statut de l'écart : **consigné**. Reste à relire ces deux valeurs par la vérification [R] d'ADR-014 (étape G de `reaction.md`).

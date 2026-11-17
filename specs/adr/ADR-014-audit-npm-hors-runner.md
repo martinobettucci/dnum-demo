@@ -49,6 +49,20 @@ Complète : ADR-010 (cadre de l'audit), ADR-002 (dépendances épinglées).
    `./dev deploy service` (ADR-010, SPEC-001.15 (e)).
 6. **Runner** : inchangé. Il n'a ni Docker, ni Node, ni accès réseau au registre.
 
+## Canal de l'audit : la toolbox (précision, complément du chef de projet, 2026-11-17)
+
+- `./dev audit-npm` appelle `tools/bin/npm`, c'est-à-dire `tools/bin/_dockerized npm …` : le wrapper lit
+  `tools/toolbox/registry.conf` (ligne `npm node:22.12.0-alpine`) et exécute `docker run --rm … node:22.12.0-alpine`
+  avec le dépôt monté sur le répertoire courant. Le lancement de `docker run` est donc **interne à la toolbox**.
+- Ce canal est **autorisé à tout agent** (ou à l'hôte). C'est la règle de l'utilisateur : une commande absente de l'hôte
+  s'exécute dans son conteneur, image épinglée au tag exact, déclarée dans `tools/toolbox/registry.conf` (CLAUDE.md §1).
+- Le garde-fou (`tools/guards/guard.py`, motif `docker\s+(run|…)`) bloque les `docker run` **directs** saisis dans une
+  commande d'agent. Il ne bloque pas la toolbox : la commande vue par le garde-fou est `tools/bin/npm` (ou `./dev audit-npm`),
+  qui ne contient pas la chaîne `docker run`. Ce n'est pas un contournement : c'est le canal prévu.
+- Conséquence : aucun agent ne doit appeler `docker run` directement pour auditer `npm`. Passer par `tools/bin/npm` ou
+  `./dev audit-npm`. Une nouvelle commande suit la même voie : entrée dans le registre, puis `tools/bin/regen`.
+- Le wrapper n'ajoute pas de socket Docker au runner (option (b) rejetée) : le runner n'appelle pas la toolbox.
+
 ## Conséquences
 
 - Deux étapes, dans cet ordre : `./dev audit-npm`, puis `./dev policies`. Sans la première, la policy 25 est en échec
