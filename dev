@@ -51,6 +51,7 @@ case "$cmd" in
 ./dev policies           exécute policies/checks → iterations/NNN/policies/results.json
 ./dev test               exécute les tests automatiques → iterations/NNN/tests/
 ./dev cout               rapport de coût de l'itération courante → iterations/NNN/cout.json
+./dev audit-npm          npm audit de app/web (hors runner) → iterations/NNN/policies/audit-npm.json
 ./dev status | logs [pile] [s]   état / journaux de la pile
 Pile : dev (défaut, jetable, projet devenv, port 8080) | service (projet dnum-service, port 8081).
        Choix par argument (./dev deploy service) ou DEVENV_PILE=service (test, policies).
@@ -95,6 +96,12 @@ H
     it=$(cur)
     docker run --rm -v "$HOME/.claude/projects:/projects:ro" -v "$ROOT:/w" -w /w python:3.13.1-slim \
       python3 tools/sponsor/cout.py "/projects/${DEVENV_COST_PROJECT:-$(echo "$ROOT" | sed 's#[/.]#-#g')}" "iterations/$it" tools/sponsor/tarifs.json ;;
+  audit-npm)
+    # npm audit dans app/web via la toolbox, HORS runner (pas de socket Docker) → iterations/NNN/policies/audit-npm.json (policy 25)
+    it=$(cur); out="iterations/$it/policies/audit-npm.json"; mkdir -p "iterations/$it/policies"
+    rc=0; (cd app/web && "$ROOT/tools/bin/npm" audit --json) > "$out" || rc=$?
+    echo "audit-npm : $out (rc=$rc)"
+    exit "$rc" ;;
   status) dc --profile client ps ;;
   logs) dc --profile client logs --tail=200 "$@" ;;
   deploy)

@@ -1,6 +1,6 @@
 {
   "iteration": "002",
-  "date": "2026-11-17T13:24:22",
+  "date": "2026-11-17T13:32:04",
   "pile_demarree": true,
   "results": [
     {
@@ -55,7 +55,7 @@
       "file": "05-env-secrets-valeurs-absentes.sh",
       "status": "respectee",
       "rc": 0,
-      "output": "5 valeur(s) secrète(s) de 1 fichier(s) absentes de 198 fichiers (iterations/ comprises) et de deploy.log"
+      "output": "5 valeur(s) secrète(s) de 1 fichier(s) absentes de 207 fichiers (iterations/ comprises) et de deploy.log"
     },
     {
       "POLICY": "ENV-devenv-ignore",
@@ -188,9 +188,9 @@
       "REF": "SPEC-001.15 (b)(c) | ADR-010 | CA-002-2",
       "QUAND": "always",
       "file": "25-front-audit-npm.sh",
-      "status": "violee",
-      "rc": 1,
-      "output": "audit npm non exécutée (échec, pas « réussie ») : npm n'a pas rendu de rapport d'audit"
+      "status": "respectee",
+      "rc": 0,
+      "output": "npm audit (audit-npm.json) : 3 paquet(s) remonté(s), avis listés : GHSA-67mh-4wv8-2f99 (esbuild, cas A (ADR-010)), GHSA-8r88-6cj9-9fh5 (auth-js, cas A voie 1 (ADR-010)) ; aucun haut ni critique ; C2 (metafile) non vérifiée"
     },
     {
       "POLICY": "STACK-restart-service",
@@ -224,9 +224,9 @@
       "REF": "SPEC-004.18 | SPEC-004.12 | ADR-011 | CA-002-33",
       "QUAND": "always",
       "file": "29-db-migrations-additives.sh",
-      "status": "violee",
-      "rc": 1,
-      "output": "migrations non additives ou non vérifiables : 001–005 : git absent du conteneur runner, comparaison à dae9044 non exécutée"
+      "status": "respectee",
+      "rc": 0,
+      "output": "aucune migration >= 006 à contrôler ; 001 à 005 identiques à la référence dae9044"
     },
     {
       "POLICY": "FRONT-messages-tour3",
@@ -275,8 +275,8 @@
     }
   ],
   "synthese": {
-    "respectee": 28,
-    "violee": 2,
+    "respectee": 30,
+    "violee": 0,
     "non_applicable": 0
   }
 }
