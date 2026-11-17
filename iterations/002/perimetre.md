@@ -324,3 +324,27 @@ Ces deux points ne sont **pas** réalisés dans l'itération 002. Ils sont inscr
   version résolue dans le lockfile, et build de l'application vert ([T]).
 
 Ces points ne modifient ni le périmètre fonctionnel de la boucle 002 ni son objectif (§ 1).
+
+## 7. Backlog de l'itération 003 — changer mon mot de passe (arbitrage du chef de projet, 2026-11-17)
+
+Inscrit au backlog de 003, **non réalisé dans 002**. Priorité **proposée : SHOULD** (à confirmer par le chef de projet à l'ouverture de 003).
+Canal : `PUT /auth/v1/user` avec le jeton de l'utilisateur (chemin standard Supabase), accepté et documenté pour 002 par ADR-012 § 6 (complément tour 4, ADR-013 D-5).
+
+**Point à lever avant 003 :** le complément d'ADR-012 § 6 indique encore ce canal comme « point ouvert » (ADR-013, point 2 : l'accepter ou le fermer). Le chef de projet l'a arbitré « accepté pour 002 ». L'architecte doit donc formaliser cet arbitrage dans une spec (SPEC-003 ou SPEC-001) avant que 003 ne le réalise.
+
+**US-18 — Changer mon mot de passe.** En tant que membre activé (administrateur compris), je veux changer mon mot de passe depuis l'application, afin de garder un accès sûr à mon compte sans passer par l'administrateur.
+
+Critères provisoires (numérotation définitive à la charge du product owner de 003 : `CA-003-x`) :
+
+- **CA-003-a** [C] — Depuis la barre du haut, un lien « Mon mot de passe » ouvre un formulaire avec trois champs : mot de passe actuel, nouveau mot de passe, confirmation du nouveau mot de passe.
+- **CA-003-b** [C] — Un nouveau mot de passe de moins de 8 caractères, ou une confirmation différente du nouveau mot de passe, est refusé avec un message d'erreur lisible ; le mot de passe reste inchangé (même règle que CA-002-7).
+- **CA-003-c** [C] — Un mot de passe actuel incorrect est refusé avec un message d'erreur lisible ; le mot de passe reste inchangé.
+- **CA-003-d** [C] — Un changement réussi affiche « Votre mot de passe a été modifié. ». À la déconnexion puis à la reconnexion, le nouveau mot de passe est accepté et l'ancien refusé.
+- **CA-003-e** [C] — Après le changement, mes tâches, mes temps et mes propositions restent accessibles à l'identique, sans perte.
+- **CA-003-f** [C] — Un compte en attente d'activation ne voit pas le lien « Mon mot de passe » (il ne voit que l'écran « Compte en attente d'activation », CA-002-10).
+- **CA-003-g** [T] — Le changement n'est accepté que pour la session de l'utilisateur connecté : sans jeton valide, ou avec le jeton d'un autre compte, aucun mot de passe n'est modifié.
+- **CA-003-h** [T] — Après un `./dev deploy` sans `reset` suivant le changement, le mot de passe modifié reste valide : le seed ne le rétablit pas (CA-002-40, ADR-012).
+
+Dépendances : la mise à jour `supabase-js` de BL-003-1 peut modifier l'appel ; la recette d'authentification de 003 rejoue CA-002-4 à 002-12 et CA-003-a à 003-d.
+
+Hors périmètre de cette story (à confirmer) : « mot de passe oublié » par e-mail (SMTP exclu de 002 et 003 sauf décision contraire) ; changement du mot de passe d'un autre compte par l'administrateur ; règle de complexité au-delà de 8 caractères ; historique des mots de passe ; double authentification.
