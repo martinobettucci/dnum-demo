@@ -272,9 +272,10 @@ que l'hôte seul peut faire : elles ne sont pas des critères fonctionnels et ne
 |---|---|---|
 | A1 | SPEC-005 fait foi pour les textes (M-1 à M-6, SPEC-005 § « Messages exacts »). | CA-002-27, 28, 38 et 39 alignés sur les textes exacts ; recette étapes 5, 7, 9, 10, 12 et 18.1 alignées. CA-002-38 aligné aussi sur la règle de SPEC-005.62 (deux champs, correspondance par mots), au-delà des seuls textes. |
 | A2 | Numérotation de l'architecte : 37 barre fixe, 38 recherche, 39 confirmation « Désactiver ». | CA-002-39 créé ; la confirmation est retirée de CA-002-34. Recette étape 18.1 et décompte de couverture mis à jour (28 critères [C]). |
-| A3 | « Réaffecter » et « Loguer du temps » restent **sans confirmation** : actions réversibles. | Aucun CA de confirmation pour ces deux actions (points ouverts 1 et 2 de SPEC-005 clos pour ces deux actions). « Modifier » n'est pas arbitré : point toujours ouvert. |
+| A3 | « Réaffecter » et « Loguer du temps » restent **sans confirmation** : actions réversibles. | Aucun CA de confirmation pour ces deux actions (points ouverts 1 et 2 de SPEC-005 clos pour ces deux actions). |
 | A4 | CA-002-1, partie « après `reset` » : **écart accepté** tant que la pile `dev` est gelée. | Mention ajoutée à CA-002-1 ; la partie reste exigible à la levée du gel. |
 | A5 | Seed (ADR-012) : en pile service, le seed crée l'admin s'il est absent et ne réécrit jamais un mot de passe existant. | CA-002-40 créé (US-2, [T] + [P]), rattaché à SPEC-003.10 à 003.12. |
+| A6 | « Modifier » (tâche) reste **sans confirmation** : action réversible, comme « Réaffecter » et « Loguer du temps » (A3). | Aucun CA de confirmation pour « Modifier » (CA-002-15 inchangé). Point ouvert retiré de A3. |
 
 ### Retours de recette, tour 3 (rattachés aux stories existantes)
 

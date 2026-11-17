@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Refuse tout push dont les commits envoyés contiennent une valeur de .devenv/secrets/*.env.
+set -euo pipefail
+root=$(git rev-parse --show-toplevel)
+shopt -s nullglob; files=("$root"/.devenv/secrets/*.env); [[ ${#files[@]} -eq 0 ]] && exit 0
+z=0000000000000000000000000000000000000000
+while read -r _ local_sha _ remote_sha; do
+  [[ "$local_sha" == "$z" ]] && continue
+  range=$([[ "$remote_sha" == "$z" ]] && echo "$local_sha" || echo "$remote_sha..$local_sha")
+  while IFS='=' read -r k v; do
+    [[ -z "$v" || ${#v} -lt 12 ]] && continue
+    if [[ -n "$(git log --format=%h -S"$v" "$range" | head -1)" ]]; then
+      echo "pre-push devenv : REFUS, la valeur de $k (secrets) figure dans les commits à pousser." >&2; exit 1
+    fi
+  done < <(cat "${files[@]}")
+done

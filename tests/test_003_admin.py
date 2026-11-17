@@ -5,7 +5,8 @@ import base64, hashlib, hmac, json, re, stat
 
 import pytest
 
-from conftest import SECRETS_FILE, WORKSPACE, compte_admin, extrait, jwt_payload, login
+from conftest import SECRETS_FILE, WORKSPACE, compte_admin, extrait, jwt_payload, login, masquer
+from stub_gotrue import StubGoTrue, compte, environnement_factice, lancer_seed
 
 CLES = ["POSTGRES_PASSWORD", "JWT_SECRET", "ANON_KEY", "SERVICE_ROLE_KEY",
         "ADMIN_EMAIL", "ADMIN_PASSWORD"]
@@ -137,3 +138,52 @@ def test_deploy_log_sans_secret(secrets_env):
     # Seuls les NOMS des variables fuitées sortent dans le message, jamais leurs valeurs.
     fuites = [cle for cle in CLES_NON_PUBLIQUES if secrets_env.get(cle) and secrets_env[cle] in txt]
     assert not fuites, f"valeur(s) de secret présente(s) dans deploy.log : {', '.join(fuites)}"
+
+
+# --- SPEC-003.10 (ADR-012) : seed sur compte existant, GoTrue joué par un stub local -------------
+# Aucun deploy ni reset : seed.py est lancé directement contre 127.0.0.1 (stub_gotrue.py).
+# Les valeurs passées au seed sont factices (environnement_factice) ; les assertions ne portent que sur
+# des codes retour, des compteurs et des listes de (méthode, chemin).
+
+@pytest.mark.spec("SPEC-003.10")
+def test_seed_compte_existant_confirme_rc0_sans_aucune_ecriture():
+    """Compte ADMIN_EMAIL existant et confirmé : seed rc=0, aucune requête hors GET /health et
+    GET /admin/users (donc aucun POST, PUT, PATCH, DELETE)."""
+    env = environnement_factice()
+    with StubGoTrue([compte(env["email"], confirme=True)]) as stub:
+        res = lancer_seed(stub.url, env)
+        lu_comptes = ("GET", "/admin/users") in stub.requetes
+        ecritures = len(stub.ecritures())
+        hors = len(stub.hors_attendu())
+    assert res.returncode == 0, f"seed rc={res.returncode} : {masquer(res.stderr[:300])}"
+    assert lu_comptes, "le seed n'a pas interrogé GET /admin/users"
+    assert ecritures == 0, f"{ecritures} requête(s) d'écriture reçue(s) par le stub"
+    assert hors == 0, f"{hors} requête(s) hors GET /health et GET /admin/users"
+
+
+@pytest.mark.spec("SPEC-003.10")
+def test_seed_rejoue_n_fois_sur_compte_existant_sans_ecriture():
+    """N déploiements successifs sans reset : aucune écriture cumulée, rc=0 à chaque passage."""
+    env = environnement_factice()
+    rc_successifs = []
+    with StubGoTrue([compte(env["email"], confirme=True)]) as stub:
+        for _ in range(3):
+            rc_successifs.append(lancer_seed(stub.url, env).returncode)
+        ecritures = len(stub.ecritures())
+    assert rc_successifs == [0, 0, 0], f"codes retour successifs : {rc_successifs}"
+    assert ecritures == 0, f"{ecritures} écriture(s) cumulée(s) sur 3 passages"
+
+
+@pytest.mark.spec("SPEC-003.10")
+def test_seed_compte_absent_cree_par_post_seul_sans_put_ni_patch_ni_delete():
+    """Témoin positif : la seule écriture admise est le POST /admin/users de la branche « compte absent »
+    (ADR-012, point 1). Sans cela, le stub ne prouverait pas qu'il détecte les écritures."""
+    env = environnement_factice()
+    with StubGoTrue([]) as stub:
+        res = lancer_seed(stub.url, env)
+        ecritures = stub.ecritures()
+    assert res.returncode == 0, f"seed rc={res.returncode} : {masquer(res.stderr[:300])}"
+    nb_post = sum(1 for m, p in ecritures if m == "POST" and p == "/admin/users")
+    nb_autres = len(ecritures) - nb_post
+    assert nb_post == 1, f"{nb_post} POST /admin/users (attendu : 1)"
+    assert nb_autres == 0, f"{nb_autres} écriture(s) autre(s) que la création"

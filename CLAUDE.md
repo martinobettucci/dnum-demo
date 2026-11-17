@@ -103,4 +103,6 @@ Chaque équipe est une session Claude locale qui **dépêche elle-même les agen
   (spark-docker, 10.77.0.25) se parlent et se coordonnent. Ne jamais contacter les sessions
   des autres machines (Remote Control, cloud) visibles dans ListAgents.
 - Langue de travail : français.
-- Aucun secret dans le dépôt.
+- Aucun secret dans le dépôt. Dépôt distant : `git@github.com:martinobettucci/dnum-demo.git`
+  (branche `main`). Le chef de projet pousse en fin de tour ; le hook `tools/git-hooks/pre-push`
+  refuse tout push contenant une valeur de `.devenv/secrets/*.env`.

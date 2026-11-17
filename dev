@@ -73,7 +73,8 @@ H
     dc --profile tools --profile client --profile deploy build "$@" ;;
   bootstrap)
     "$0" doctor
-    chmod +x dev tools/client/client.sh tools/guards/guard.py tools/deploy/*.sh tools/deploy/*.py
+    chmod +x dev tools/client/client.sh tools/guards/guard.py tools/git-hooks/*
+    git config core.hooksPath tools/git-hooks tools/deploy/*.sh tools/deploy/*.py
     mkdir -p .devenv iterations
     "$0" build
     echo "Environnement prêt. Lancer : cd $ROOT && claude   (le thread principal est le chef de projet)" ;;
