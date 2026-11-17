@@ -498,9 +498,9 @@ Le point 8 (mise à jour de `service`) est une action en attente d'autorisation,
   - **Sous-cas non couvert** : CA-002-40 prévoit aussi que, si le compte existe sans e-mail confirmé, le seed s'arrête avec un code non nul sans rien modifier. Les trois tests vérifient seulement le cas confirmé (rc = 0). La policy 35 contrôle les appels PUT/PATCH/DELETE, pas ce code retour. cloture.md renvoie « le test de SPEC-003.11 » au backlog 003 sans traiter ce sous-cas. Il faut une décision explicite : report nommé au backlog 003, ou preuve exigée avant clôture.
 - **C8 / CA-002-38** : report au backlog 003 cohérent avec perimetre §4 ([C] seul) et §9. cloture.md ajoute test et policy au backlog 003, ce que perimetre ne demande pas.
 
-#### C.3 Verdict
+#### C.3 Verdict (historique, avant décision G1 ; voir § H)
 
-**Acceptation formelle de clôture de l'itération 002 : NON PRONONCÉE.** Des points restent sans décision :
+**Acceptation formelle : NON PRONONCÉE à ce stade, puis PRONONCÉE en § H après décision G1.** Points qui restaient sans décision :
 
 1. **Point 8, mise à jour de la pile `service`** : travail à faire, en attente d'autorisation de l'utilisateur. C'est une action, pas une décision du PO.
 2. **C9**, écart de version `service` (3c93a08) et `dev` (29a3980) : non tranché.
@@ -547,6 +547,7 @@ Point 8 (mise à jour de `service` avec les correctifs nginx) : **action en atte
 | Id | Report | Origine | Priorité proposée | Sortie attendue |
 |---|---|---|---|---|
 | BL-003-6 | **Test du stub GoTrue pour SPEC-003.11** : si le compte `ADMIN_EMAIL` existe sans e-mail confirmé, le seed sort avec un code non nul, sans secret dans sa sortie et sans rien modifier (sous-cas de CA-002-40). | Clôture 002, décision CA-002-40 | MUST (sous-cas d'une story Must, seul [T] ouvert de US-2) | Test écrit par le testeur ; SPEC-003.11 vert |
+| BL-003-7 | **Test du refus de restauration à niveau de migration différent** (sous-cas [T] de CA-002-36, US-17) : une restauration vers une sauvegarde de niveau de migration différent est refusée, rc ≠ 0, rien restauré. Décision du chef de projet (G1, option b) : **REPORT nommé**. La pile `dev` est gelée et sert de copie de retour arrière : aucun restore, même refusé, n'y est joué. | Clôture 002, G1 (`cloture.md`) | MUST (sous-cas [T] d'une story Must) | Test écrit par le testeur dans `tests/`, exécuté sans toucher aux piles `dev` ni `service` (stub ou pile jetable, choix de l'architecte) ; sous-cas vert |
 
 Le PO de 003 fixe la numérotation définitive `CA-003-x`.
 
@@ -572,7 +573,8 @@ ni la liste du chef ni le § C.3 ne mentionnaient.
     (`observation.md` l.548 ; la policy 24 est une simulation, l.184).
   - Le refus existe dans `./dev` (ligne 177) : le code est présent, sa preuve ne l'est pas.
   - **C5 ne couvre pas ce point** : C5 vise SPEC-004.3, 004.7 et 004.8 vérifiées par [R], et le refus n'y est consigné nulle part.
-  - Décision attendue du chef de projet, au choix :
+  - **Décision du chef de projet : (b), REPORT nommé en 003 (BL-003-7, § F).** La pile `dev` est gelée et sert de copie de retour arrière : aucun restore, même refusé, n'y est joué. Les autres sous-cas de CA-002-36 sont prouvés en [R] (`cloture.md`). Les options ci-dessous sont conservées comme historique.
+  - Options initialement ouvertes :
     (a) **exiger la preuve** : le responsable applicatif lance `./dev restore service <sauvegarde de niveau de migration différent>`
     (refus attendu, rc ≠ 0, rien restauré), et consigne la commande, la sortie brute et l'horodatage dans `mise-en-service.md` ;
     (b) **reporter nommément** le sous-cas refus au backlog 003, comme CA-002-40.
@@ -580,8 +582,17 @@ ni la liste du chef ni le § C.3 ne mentionnaient.
 
 ### H. Verdict
 
-**Acceptation formelle de clôture de l'itération 002 : NON PRONONCÉE.**
+**Acceptation formelle de clôture de l'itération 002 : PRONONCÉE** (product owner, 2026-11-17), sur la base de la décision G1 du chef de projet (report nommé, BL-003-7).
 
-Ce qui manque : **une décision sur G1** (preuve exigée ou report nommé). Rien d'autre n'est ouvert dans `cloture.md`.
-Dès que le chef de projet a tranché G1, le PO prononce l'acceptation sans autre condition. Les actions de § E
-restent à suivre et ne conditionnent pas cette décision.
+Contrôle d'exhaustivité après G1 : tous les identifiants de `cloture.md` ont une décision (§ C.1, § C.3, § D) ;
+les points de `reaction.md` § CLÔTURE sont couverts par les tables A et B ou par `cloture.md`. Il ne reste aucun point sans décision.
+
+**Restes hors décision** : ce sont des actions, elles ne conditionnent pas l'acceptation.
+1. **Mise à jour de la pile `service`** (nginx `Cache-Control: no-cache`, en-têtes de sécurité par location, `build-sha256`) :
+   `./dev backup service` puis `./dev deploy service` sans `reset`, sur autorisation de l'utilisateur. Responsable applicatif seul. Résorbe l'écart C9.
+2. **S15** : validation par l'utilisateur de ses comptes réels sur dnum.lelabs.tech.
+3. **P6** : réservation DHCP de `10.77.0.25` par l'utilisateur.
+4. **Relevé final du coût (C11)** : sponsor, après `./dev iteration-close`.
+5. **O4** (correction de `mise-en-service.md` : date d'audit et nom du troisième paquet) : responsable applicatif. Non bloquante selon la réaction ; non relue par le PO.
+
+Les reports déjà inscrits restent au backlog 003 : BL-003-1 à BL-003-7 (§ 6, § 9, § F).
