@@ -386,3 +386,72 @@ Constat : le client headless n'a produit aucun effet visible en zoom 200 % ; la 
 - Échap pour fermer le bloc de confirmation (recommandé par SPEC-005.63, non exigé par CA-002-39) : à traiter avec US-20 si le chef de projet le souhaite, sinon hors périmètre.
 - Annonce vocale de tous les messages de l'application : seul le message de confirmation de US-19 est visé.
 - Tests du zoom 400 % ou 300 % : seul le niveau 200 % est exigé.
+
+## 9. Backlog 003 — reports de clôture 002 (décision du chef de projet, 2026-11-17)
+
+Inscrit au backlog de 003, non réalisé dans 002. Priorités proposées, à confirmer par le chef de projet à l'ouverture de 003. Numérotation `BL-003-x` provisoire.
+
+| Id | Report | Origine | Priorité proposée | Sortie attendue |
+|---|---|---|---|---|
+| BL-003-3 | **Réécrire SPEC-003.9 pour la pile service.** Sur dev, la spec décrit un état de données (8 comptes réels copiés) et non un défaut ; elle ne s'applique pas telle quelle à la pile service. | Clôture 002, point 2 ; réaction C1 | MUST | Spec réécrite par l'architecte ; SPEC-003.9 vert sur service |
+| BL-003-4 | **Policy 07 `ENV-apt-epingle`** : chaque paquet d'un `apt-get install` dans les Dockerfile porte `=<version>`. Contrôle préventif : le Dockerfile est conforme aujourd'hui ; la preuve d'installation reste celle de O2 (point 6). | Réaction tour 3 bis, O5 ; clôture point 7c | SHOULD | `policies/checks/07-env-apt-epingle.sh` écrit par `policy` avant toute action ; entrée dans `results.json` |
+| BL-003-5 | **Référence `dae9044` en dur dans la policy 29** (L87). ADR-015 §6 demande de lire la référence dans `mise-en-service.md`, qui cite aussi `dae9044` et « modifications non commitées ». L'architecte confirme ADR-015 §6 ou acte `dae9044`. | Réaction tour 3 bis, O6 ; clôture point 7d | SHOULD | ADR ou policy 29 ajustée ; référence cohérente avec la version déployée |
+
+**Reports déjà inscrits, renvoi sans duplication (§8)** :
+- Zoom 200 % (CA-002-37 à 200 %) : **US-21**, CA-003-k.
+- Visibilité du message de confirmation (CA-002-27, CA-002-28) : **US-19**, CA-003-i.
+- Cadre de focus visible (CA-002-39 et boutons de l'application) : **US-20**, CA-003-j, MUST.
+
+## Acceptation de clôture 002 (product owner, 2026-11-17)
+
+Source : `iterations/002/reaction.md`, section « CLÔTURE » (journal `160057-reaction.md`, §A à §E). Identifiants repris de cette section : B1 à B3, C1 à C15, D, E1 à E11. Les labels O1 à O6 viennent de la réaction « tour 3 bis » (journal `134725`) ; la correspondance est indiquée au point concerné.
+
+Statuts : **ACCEPTÉ** = écart connu accepté par le chef de projet ; **PROUVÉ** / **FAIT** = fait vérifié ou consigné par une source citée ; **REPORTÉ** = inscrit au backlog 003 (§8, §9) ; **NON TRANCHÉ** = point de la réaction absent de la liste du chef de projet, non tranché ici.
+
+### A. Décisions du chef de projet (points 1 à 8)
+
+| # | Point de la réaction | Statut | Décision et motif |
+|---|---|---|---|
+| 1 | CA-002-1, partie « après reset » (B1, D1) | **ACCEPTÉ** | Pile dev gelée 7 jours. Reste exigible à la levée du gel (§4, CA-002-1, A4). Cette ligne donne la validation PO demandée par `mise-en-service.md` l.300. |
+| 2 | SPEC-003.9 en échec sur dev (B1 D5, C1, E3, E4) | **ACCEPTÉ** | Écart accepté : c'est un état de données (8 comptes réels copiés), non un défaut. Le constat D5 (« spec cohérente ») ne vaut donc pas pour dev. Réécriture pour la pile service : BL-003-3. Reste à noter : `tests/resultat.txt` donne 197 collectés, 192 réussis, 1 échec, 4 ignorés. Le PO n'a pas vérifié que l'échec unique est SPEC-003.9. Le critère C1 (« `./dev test` sans échec ») n'est pas atteint, accepté. |
+| 3a | CA-002-37, zoom 200 % (B3) | **ACCEPTÉ** | Accepté sur la barre fixe (validée passe 3). Zoom 200 % : US-21, CA-003-k (§8). |
+| 3b | CA-002-27 et CA-002-28, visibilité du message (B3) | **ACCEPTÉS** | Visibilité : US-19, CA-003-i (§8). |
+| 3c | CA-002-39, focus visible (B3) | **ACCEPTÉ** | Focus visible : US-20, CA-003-j (§8), MUST. |
+| 3d | CA-002-9, URL non vérifiable par le client (B3) | **ACCEPTÉ** | Couvert par le test [T] de CA-002-9 (§4, CA-002-9 : [C] + [T]). Le PO n'a pas relu ce test ; `./dev test` le confirme. |
+| 4 | Étapes non jouées en passe 3 (B3) | **ACCEPTÉ** | Passe 3 ciblée ; passes 1 et 2 couvrent. Les points liés à la procédure (étape 15, charge 6 h) restent NON TRANCHÉ (voir B, C7). |
+| 5 | E7, formulaires repliés (§CLÔTURE : « E7 n'est pas un écart accepté ») ; O1 | **FAIT** (passe 2) | OK en passe 2 (`journal/140419-client.md` l.292, l.307). O1 est clos. Attention : cette passe est antérieure au deploy dev `29a3980` (15:55). La recette de la version finale relève de C7 (voir B). Le `rapport-client.md` l.81 reste périmé (C14). |
+| 6 | O2, bash `5.2.15-2+b13` non prouvé dans l'image (A, C2) | **PROUVÉ** | `journal/135903-testeur.md` l.23 : `dpkg-query` dans le runner, git `1:2.39.5-0+deb12u3`, curl `7.88.1-10+deb12u15`, bash `5.2.15-2+b13`. Le journal `135007` ajoute un test `dpkg-query` ; il est ignoré hors Debian. Son résultat dans `tests/resultat.txt` n'a pas été relu par le PO. |
+| 7a | O3, compte rendu du développeur vide (B2) | **ACCEPTÉ** | Pas de report en 003. La trace du compte rendu vide reste à consigner (C14). |
+| 7b | O4, `mise-en-service.md` : date d'audit et troisième paquet (B2) | **Responsable applicatif** | Hors backlog PO. La correction (date 13:45:51, nom du paquet) n'est pas vérifiée par le PO. |
+| 7c | O5, policy 07 `ENV-apt-epingle` (B2) | **REPORTÉ** | BL-003-4 (§9). |
+| 7d | O6, `dae9044` en dur dans la policy 29 (B2) | **REPORTÉ** | BL-003-5 (§9). |
+| 8 | Mise à jour de la pile service avec les correctifs nginx (A) | **FAIT** | Enregistré comme fait, pas comme écart. Source : réaction (A) et `mise-en-service.md` l.43-64. Le chef de projet indique une autorisation de l'utilisateur en attente ; la réaction ne le mentionne pas. Les deux informations ne sont pas réconciliées dans les sources lues : à consigner par le chef de projet. |
+
+### B. Points de la réaction non couverts par la liste du chef (NON TRANCHÉ)
+
+Le PO ne tranche pas ces points à la place du chef de projet. Ils sont listés par thème, dans l'ordre de l'impact sur le commit et la bascule.
+
+| Id | Point | Constat | Remonté à |
+|---|---|---|---|
+| C6 | Fragment de clé anon dans `tests/resultat.txt` l.7 et dans `junit.xml`, alors que `rapport-tour2` et `rapport-testeur` §7 affirment 0 occurrence | Hygiène des secrets ; policy 05 à revoir. Ces fichiers sont dans le périmètre du commit C10. | Chef de projet : purge et policy 05 (recommandation PO : **avant** le commit). |
+| C10 | Commit non fait : `specs/`, `specs/adr/`, `policies/checks/35-*`, journaux et `results.json` | Commiter en l'état embarquerait le fragment de C6. | Chef de projet : décision de commit, après C6. |
+| C9 | Service sur `3c93a08`, dev sur `29a3980` (code identique à `ff6715f`, lien non expliqué) | La réaction demande de trancher « avant toute étape de proxy ». Lien possible avec le point 8. | Chef de projet, responsable applicatif. |
+| U1 | Comptes réels (3 attendus, 8 présents) ; compte réel inscrit vers 13:00 non identifié (C12) ; décisions D1 à D8 de `mise-en-service.md` ; réservation DHCP de `10.77.0.25` (P6) ; bascule du proxy (S14), validation par les utilisateurs (S15), sauvegarde finale (S5 à S7) | La réaction note que ces étapes ne sont pas documentées comme faites. | Utilisateur, via le chef de projet. |
+| C3 | SPEC-003.11 et 003.12 sans test ; policy `[P]` de 003.10 à 003.12 absente ; SPEC-004.2 non exécutée | **CA-002-40** (US-2, [T] + [P]) n'a ni test ni policy dans les sources lus : ce critère de 002 n'est pas acquis et n'apparaît pas dans la liste du chef. | Chef de projet : accepter un report ou exiger la preuve. |
+| C4 | Vérification `email_confirmed_at` non faite au second `deploy service` (ADR-013 D-4) | Non tranché. | Chef de projet ; testeur. |
+| C5 | SPEC-004.3, 004.7, 004.8 en SKIP ou non exécutées (`DEVENV_PILE=service`) | Non tranché. | Chef de projet ; testeur. |
+| C8 | CA-002-38 sans test ni policy (OK en passe 3 selon la réaction, (A)) ; CA-002-27, 28, 37 vérifiés en statique ; REF des policies 36 et 37 citent des « incidents » non décrits | CA-002-38 n'est pas dans la liste du chef, alors qu'il est au périmètre de US-4 (Must). | Chef de projet ; testeur ; policy. |
+| C7 | Recette de la version finale : aucune recette après le deploy dev `29a3980` (15:55). Étape 15 incohérente ; charge observée 6 h au lieu de 3 h. WebSocket au chargement non observée. | O1 est clos sur la passe 2 (antérieure au 15:55). Le point 4 couvre les étapes non jouées, pas la procédure. La procédure de recette est un arbitrage PO, à rendre dans un tour dédié. | Chef de projet, puis PO. |
+| E1 | Passe 2 KO (CA-002-27, 28, 37, 38, 39) contre passe 3 OK, sans explication. Seul changement consigné : correctif `Cache-Control` du deploy de 14:58 | Le chef de projet accepte les résultats de la passe 3 (point 3) sans que la contradiction soit levée. | Chef de projet. |
+| E2 | `rapport-client.md` l.92 : « 16 étapes sur 18 entièrement conformes », contre un tableau de 18 OK, 1 réserve et 1 KO | Non tranché. | Client ; chef de projet. |
+| E5 | Décompte de tests [T] : 49 (`rapport-testeur` l.19) contre 46 (`rapport-tour2` l.26) ; SPEC-004.3 PASS, SKIP et SKIP selon les passes | Non tranché. | Testeur. |
+| E9 | Coût : `cout.md` dit « 22 critères OK » à partir de la passe 1 seule ; C11 : `fin: null`, coût Opus identique entre deux relevés, `sous_agents` à 0 | Non tranché. | Sponsor. |
+| C13 | Dev sans politique de redémarrage (ADR-009) | Non tranché. | Architecte ; responsable applicatif. |
+| C14 | Traçabilité : `rapport-client.md` sans passe 2 et l.81 périmé ; `cout.md` sans passe 2 ; `mise-en-service.md` titré « BASCULE » alors que son statut est « SERVICE PRÊTE (pré-bascule) » ; E8 (policy 35, journal `133755`) | Non tranché. | Chef de projet (consignation) ; client ; responsable applicatif ; développeur. |
+| C15 | Reliquats : compteur de débit (202 inscriptions, pas de compteur de test) ; variables GoTrue dépréciées ; message `127.0.0.1` dans `./dev` | Non tranché. Le message touche CA-002-1 (c), contrôle [P] déjà au périmètre. | Testeur ; action. |
+
+### C. Verdict du product owner
+
+- Les trois conditions bloquantes du verdict de la réaction (O2, SPEC-003.9, réserves de recette et écart « reset ») sont tranchées (points 1 à 3 et 6).
+- **Acceptation formelle de clôture de l'itération 002 : non prononcée à ce stade.** Elle dépend de l'arbitrage du chef de projet sur la section B, en particulier sur **CA-002-40** (C3, critère de 002 sans preuve), **C6 et C10** (fragment de secret à purger avant tout commit) et **C9** (version du service, avant toute étape de proxy).
+- Aucun point de la section B n'est réputé accepté par ce document.
