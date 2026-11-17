@@ -1,6 +1,6 @@
 {
   "iteration": "002",
-  "date": "2026-11-17T15:01:19",
+  "date": "2026-11-17T15:04:59",
   "pile_demarree": true,
   "results": [
     {
@@ -55,7 +55,7 @@
       "file": "05-env-secrets-valeurs-absentes.sh",
       "status": "respectee",
       "rc": 0,
-      "output": "5 valeur(s) secrète(s) de 2 fichier(s) absentes de 254 fichiers (iterations/ comprises) et de deploy.log"
+      "output": "5 valeur(s) secrète(s) de 2 fichier(s) absentes de 257 fichiers (iterations/ comprises) et de deploy.log"
     },
     {
       "POLICY": "ENV-devenv-ignore",
@@ -289,7 +289,7 @@
       "file": "36-front-bundle-servi-egal-source.sh",
       "status": "violee",
       "rc": 1,
-      "output": "/build-sha256.txt absent ou non servi (statut 200, Content-Type « text/html », repli HTML possible) : empreintes du build non vérifiables, à produire par build.mjs dans dist/"
+      "output": "/build-sha256.txt absent ou non servi (statut 200, Content-Type « text/html », text/plain attendu, repli HTML possible) : empreintes du build non vérifiables, à produire par build.mjs dans dist/"
     },
     {
       "POLICY": "GW-cache-et-entetes",
@@ -298,7 +298,7 @@
       "file": "37-gw-cache-et-entetes.sh",
       "status": "respectee",
       "rc": 0,
-      "output": "5 fichiers servis en 200 : Cache-Control no-cache ; CSP, X-Content-Type-Options nosniff, Referrer-Policy présents"
+      "output": "7 chemins servis en 200 : Cache-Control no-cache ; CSP, X-Content-Type-Options nosniff, Referrer-Policy présents"
     }
   ],
   "synthese": {

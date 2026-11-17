@@ -41,6 +41,9 @@ Trois frictions sont apparues avant le développement :
   par défaut inertes. Elles sont remplacées par `createClient(window.location.origin, …)` et la CSP `connect-src 'self'`
   (SPEC-001.9) empêche techniquement le navigateur d'appeler une autre origine.
 - Aucun autre fichier `.js` n'est servi : la tolérance ne peut pas s'étendre à du code applicatif.
+- **Preuve de provenance** (complément 2026-11-17) : `build.mjs` écrit en dernier `dist/build-sha256.txt` (sha256 de `app.js` et
+  `vendor/supabase.js`, format `sha256sum`), servi à `/build-sha256.txt`. La policy 36 compare les octets servis à ces empreintes
+  (SPEC-001.16) ; sans ce fichier, l'égalité « servi = build » n'est pas vérifiable. Décrit par SPEC-001.16 et SPEC-001.17.
 - Alternatives écartées :
   - retirer `localhost` de la règle : on perdrait la détection d'une URL de développement laissée dans notre code ;
   - réécrire la chaîne dans le bundle après le build (`sed`, `--define`) : c'est fragile, et la version servie ne serait plus la version épinglée ;

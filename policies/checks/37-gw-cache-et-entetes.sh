@@ -2,7 +2,8 @@
 # POLICY: GW-cache-et-entetes
 # REF: SPEC-001.9 | ADR-002 | CA-002-3 | incident de recette itération 002 (navigateur client jamais rechargé)
 # QUAND: deployed
-# Lecture seule : GET uniquement, sur $APP_URL/, /app.js, /config.js, /style.css, /vendor/supabase.js.
+# Lecture seule : GET uniquement, sur $APP_URL/, /index.html, /app.js, /config.js, /style.css,
+# /vendor/supabase.js, /build-sha256.txt (7 chemins).
 # Pour chacun : statut 200 ; Cache-Control contient la directive no-cache ; présence de
 # Content-Security-Policy, X-Content-Type-Options (valeur nosniff) et Referrer-Policy.
 python3 -I - <<'PY'
@@ -10,7 +11,7 @@ import os, sys
 import requests
 
 U = os.environ["APP_URL"]
-CHEMINS = ("/", "/app.js", "/config.js", "/style.css", "/vendor/supabase.js")
+CHEMINS = ("/", "/index.html", "/app.js", "/config.js", "/style.css", "/vendor/supabase.js", "/build-sha256.txt")
 bad = []
 for p in CHEMINS:
     try:
@@ -31,5 +32,5 @@ for p in CHEMINS:
         bad.append(f"{p} : Referrer-Policy absente")
 if bad:
     print("en-têtes non conformes : " + " ; ".join(bad)); sys.exit(1)
-print("5 fichiers servis en 200 : Cache-Control no-cache ; CSP, X-Content-Type-Options nosniff, Referrer-Policy présents")
+print("7 chemins servis en 200 : Cache-Control no-cache ; CSP, X-Content-Type-Options nosniff, Referrer-Policy présents")
 PY

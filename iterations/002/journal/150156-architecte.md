@@ -5,3 +5,4 @@ Itération 002. Écris uniquement dans specs/. Le fichier /build-sha256.txt (deu
 
 ## Compte rendu
 Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+Compte rendu : SPEC-001.8 (c), SPEC-001.16 (`/build-sha256.txt`) et SPEC-001.17 (`Cache-Control: no-cache` et en-têtes sur les 7 chemins) ajoutées, SPEC-006 §2 (CA-002-3) et §3 (items 20-21), ADR-006 §2 (renvoi) et README mis à jour. Écarts à traiter par `policy` : la policy 37 ne couvre que 5 chemins sur 7 et la policy 36 tolère `*`/`./` sans vérifier `text/plain`.

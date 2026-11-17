@@ -4,7 +4,8 @@
 # QUAND: deployed
 # Lecture seule. Comparaison par empreintes sha256 uniquement (jamais par recherche dans le bundle minifié).
 #  - GET $APP_URL/build-sha256.txt : fichier d'empreintes écrit au build dans l'image (format « <sha256>  <chemin> »,
-#    chemins app.js et vendor/supabase.js). Absent, non servi (repli HTML de la passerelle) ou illisible : violée.
+#    chemins app.js et vendor/supabase.js ; préfixes « * », « ./ », « dist/ » tolérés). Absent, non servi,
+#    Content-Type ne commençant pas par text/plain (repli HTML de la passerelle, text/html compris) ou illisible : violée.
 #  - GET $APP_URL/app.js et GET $APP_URL/vendor/supabase.js : sha256 des octets SERVIS == empreinte du build.
 # Le runner ne joint pas l'adresse LAN de l'hôte (ADR-007, SPEC-006 §5) : la pile est interrogée par APP_URL.
 python3 -I - <<'PY'
@@ -23,9 +24,9 @@ def get(chemin):
 # 1. Empreintes du build, servies par la passerelle.
 r = get("/build-sha256.txt")
 ct = r.headers.get("Content-Type", "")
-if r.status_code != 200 or "text/html" in ct:
+if r.status_code != 200 or not ct.strip().lower().startswith("text/plain"):
     print(f"/build-sha256.txt absent ou non servi (statut {r.status_code}, Content-Type « {ct or 'absent'} », "
-          "repli HTML possible) : empreintes du build non vérifiables, à produire par build.mjs dans dist/")
+          "text/plain attendu, repli HTML possible) : empreintes du build non vérifiables, à produire par build.mjs dans dist/")
     sys.exit(1)
 ligne = re.compile(r"^([0-9a-f]{64})\s+\*?(\S+)\s*$")
 empreintes = {}

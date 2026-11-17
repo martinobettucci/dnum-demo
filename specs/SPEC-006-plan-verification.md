@@ -27,6 +27,11 @@ Couvre tous les CA-002-1 à CA-002-36. Chaque CA a au moins un mécanisme de vé
 >
 > **Arbitrages tour 4, suite (chef de projet, 2026-11-17)** : **n° 35 validé** (item 19) ; garde esbuild « cas C gardé » tranché
 > (item 13, ADR-013 D-1) ; `./dev audit-npm` ajouté à SPEC-004.1.
+>
+> **Amendement (2026-11-17, demande du chef de projet)** : §2 (CA-002-3 : policies 36 et 37, [R] des empreintes et des
+> en-têtes) ; §3 **items 20 (policy 36, `FRONT-bundle-servi-egal-source`, SPEC-001.16) et 21 (policy 37, `GW-cache-et-entetes`,
+> SPEC-001.17)**. Les policies 36 et 37 existent dans `policies/checks/` ; elles ne sont pas encore conformes à ces items (écarts
+> consignés aux items 20 et 21). Modifications à la charge de l'agent `policy`.
 
 ## 1. Conditions d'exécution des tests automatiques (`testeur`)
 - Exécution : `./dev test` (conteneur `runner`, réseau de la pile dev). Base : `APP_URL=http://app`.
@@ -55,7 +60,7 @@ Couvre tous les CA-002-1 à CA-002-36. Chaque CA a au moins un mécanisme de vé
 |---|---|---|---|---|
 | CA-002-1 | 001.1/3/4/5/13, 004.1/2/4/7/10/11/17 | `GET $APP_URL/` 200 ; santé auth/rest | — | [P] (a) publication LAN seule (001.3, `STACK-ports-lan`) ; **(c) `./dev` sans `127.0.0.1` (004.17, policy n° 27 `DEV-sortie-url`)**. [R] (a) `curl -sI http://10.77.0.25:8080/` → 200 (dev ; `:8081` pour service) et (b) `ss -ltn` : `10.77.0.25:<APP_PORT>` seul, sans `127.0.0.1` ni `0.0.0.0`, consignés dans `mise-en-service.md`. **Dérogation** : `127.0.0.1` n'est plus vérifié (ADR-007). **Écart accepté** (chef de projet, 2026-11-17, ADR-013 D-8) : la partie « après `reset` puis `deploy` » de SPEC-001.4 n'est pas jouée (`dev` gelée, `reset` interdit) ; remplacée par le déploiement à blanc de service (`mise-en-service.md` S3-S4). |
 | CA-002-2 | 001.2/10/15, 003.2/3/6, 004.5, 004.16 | signature des clés ; `service_role` absente des fichiers servis | — | [P] images épinglées (FROM + `image:`), tags par pile (004.16), versions npm exactes, secrets absents des fichiers suivis ; [P] `FRONT-auth-js-non-appel` (policy 28, SPEC-001.15 (e)) |
-| CA-002-3 | 001.6/7/8/9/10 | relais `/auth/v1`, `/rest/v1` ; 403 `/auth/v1/admin` ; CSP ; aucune URL d'autre port dans les fichiers servis | — (implicite : tout marche sur le seul port) | [P] seul `app` publie un port |
+| CA-002-3 | 001.6/7/8/9/10/16/17 | relais `/auth/v1`, `/rest/v1` ; 403 `/auth/v1/admin` ; CSP ; aucune URL d'autre port dans les fichiers servis ; empreintes `/build-sha256.txt` = octets servis (001.16, [T] éventuel) ; `Cache-Control: no-cache` et en-têtes de sécurité sur les sept chemins (001.17) | — (implicite : tout marche sur le seul port) | [P] seul `app` publie un port ; [P] policy 36 (001.16) et policy 37 (001.17) ; [R] après `deploy` : `curl -sD -` sur les sept chemins et `sha256sum` des octets servis contre `/build-sha256.txt` (001.16, 001.17) |
 | CA-002-4 | 003.1/4/5/7/9 | connexion admin, `my_status`, unicité du compte, longueur du mot de passe, seul `ADMIN_EMAIL` hors `@test.invalid` | — | [R] transmission hors fichier |
 | CA-002-5 | 003.8, 005.14/61 | — | connexion admin ⇒ tableau de bord + « Administration » ; membre ⇒ absente | — |
 | CA-002-6 | 002.4, 001.11, 005.11 | signup ⇒ profil inactif | formulaire + message d'attente | — |
@@ -115,6 +120,20 @@ Couvre tous les CA-002-1 à CA-002-36. Chaque CA a au moins un mécanisme de vé
     politique est dans un bloc `DO` gardé ; (c) `001` à `005` identiques à leur version de référence dans git (commit consigné dans
     `mise-en-service.md` ; itération 002 : `dae9044`, ADR-013 D-3 ; comparaison par `git show <référence>:<chemin>` et sha256, git présent dans le runner, ADR-015) ; échec si l'un des trois n'est pas vérifiable (statut
     « non exécutée », jamais « réussie »). Contrôle [R] complémentaire : rejeu hors pile service (ADR-011).
+20. **(n° 36, existante, amendée par SPEC-001.16, ADR-006 §2)** `FRONT-bundle-servi-egal-source` (en ligne, `QUAND: deployed`,
+    `APP_URL`) : (a) `GET /build-sha256.txt` → 200, `Content-Type` commençant par `text/plain` ; format exact : deux lignes,
+    `app.js` puis `vendor/supabase.js`, 64 hex minuscules, deux espaces, LF final, sans `*` ni `./` ; (b) sha256 des octets reçus
+    de `/app.js` et `/vendor/supabase.js` égal à l'empreinte de la ligne correspondante. **Écarts à corriger par `policy`** : la
+    version actuelle accepte `*` et `./` (regex `\*?` et préfixe `./` retiré), ne vérifie pas `text/plain` (seul `text/html` est
+    refusé) et ne vérifie pas les en-têtes du fichier d'empreintes (couverts par item 21). Statut « non exécutée » si le fichier
+    ne peut être lu. Le contrôle par empreinte ne cherche jamais de chaîne dans le bundle minifié.
+21. **(n° 37, existante, amendée par SPEC-001.17, ADR-006 §2)** `GW-cache-et-entetes` (en ligne, `QUAND: deployed`) : pour les
+    **sept** chemins `/`, `/index.html`, `/app.js`, `/config.js`, `/style.css`, `/vendor/supabase.js`, `/build-sha256.txt` :
+    statut 200 ; `Cache-Control` contient `no-cache` ; `Content-Security-Policy` présente ; `X-Content-Type-Options` = `nosniff` ;
+    `Referrer-Policy` présente. **Écart à corriger par `policy`** : la version actuelle ne couvre que les cinq premiers ; `/index.html`
+    et `/build-sha256.txt` sont à ajouter. Pour `/build-sha256.txt`, `Content-Type` commence par `text/plain` (contrôle commun avec
+    item 20 ; l'en-tête n'est pas vérifié par la version actuelle). Contrôle statique complémentaire facultatif (non exigé) :
+    chaque `location` listée dans `app/nginx/default.conf` contient les quatre `add_header`.
 17. **(n° 30, tour 3, SPEC-005.7, .33, .40, .60, .62, .63)** `FRONT-messages-tour3` (statique, sur `app/web/src/app.js`) :
     présence exacte des textes M-1 à M-6 et des libellés « Confirmer la désactivation », « Annuler », « Rechercher dans les
     comptes en attente », « Rechercher dans les comptes actifs » ; absence de la chaîne « Proposition envoyée. » (ancienne

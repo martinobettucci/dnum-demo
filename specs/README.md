@@ -4,12 +4,12 @@
 | Id | Titre | Itération | CA couverts | Statut |
 |---|---|---|---|---|
 | SPEC-000 | Socle de l'environnement | 001 | — | actif |
-| SPEC-001 | Pile Supabase auto-hébergée et passerelle unique | 002 | CA-002-1, 2, 3, 6, 7, 11, 33 | actif (amendé tour 1 complément : 001.3, 001.4, 001.11 ; tour 2 : 001.15 nouvelle, puis (b) et (d) et policy n° 25, arbitrage 2026-11-17 ; décision 2026-11-17 : 001.15 (d) amendé, (e) ajouté, policy n° 28 ; tour 4 : 001.15 (b) précisé, audit hors runner, ADR-014 ; tour 4 suite : garde esbuild « cas C gardé » dans 001.15 (b) et (d)) |
+| SPEC-001 | Pile Supabase auto-hébergée et passerelle unique | 002 | CA-002-1, 2, 3, 6, 7, 11, 33 | actif (amendé tour 1 complément : 001.3, 001.4, 001.11 ; tour 2 : 001.15 nouvelle, puis (b) et (d) et policy n° 25, arbitrage 2026-11-17 ; décision 2026-11-17 : 001.15 (d) amendé, (e) ajouté, policy n° 28 ; tour 4 : 001.15 (b) précisé, audit hors runner, ADR-014 ; tour 4 suite : garde esbuild « cas C gardé » dans 001.15 (b) et (d) ; 2026-11-17 : 001.8 (c), **001.16** (empreintes du build, policy 36) et **001.17** (`Cache-Control: no-cache` et en-têtes de sécurité, sept chemins, policy 37) nouvelles) |
 | SPEC-002 | Modèle de données, RLS, charge projetée, entraide | 002 | CA-002-4, 6, 8 à 36 | actif |
 | SPEC-003 | Compte administrateur initial et secrets | 002 | CA-002-2, 4, 5, 33 | actif (amendé : 003.9 passe en `[T]` ; tour 3 : 003.5 amendé, 003.10 à 003.12 nouvelles, ADR-012 ; tour 4 : [R] de 003.10 et 003.12 (d) réécrits pour la pile service, ADR-013 D-6 ; tour 4 suite : canal `PUT /auth/v1/user` documenté dans 003.10, ADR-012 §6) |
 | SPEC-004 | Piles dev / service, persistance, sauvegarde, contrat `./dev` | 002 | CA-002-1, 2, 33, 36 | actif (amendé tour 1 complément : 004.7 à 004.10, 004.16 ; tour 2 : 004.7 restart (ADR-009), 004.11 env_file longue, 004.17 nouvelle ; tour 2 complément : renommage `secrets.py` → `gen_secrets.py` ; tour 3 : 004.18 nouvelle, ADR-011 ; tour 3 : 004.8 et 004.13 amendés, ADR-012 ; tour 4 suite : 004.1 (`./dev audit-npm`, ADR-014) ; complément 2026-11-17 : 004.1 précisé, canal toolbox ADR-014) |
 | SPEC-005 | Interface web (recette clavier/souris) | 002 | CA-002-5 à 8, 10, 12 à 15, 17 à 19, 21 à 25, 27 à 30, 32, 34, 35 ; tour 3 : 27, 28, 34 précisés ; 37 à 39 proposés | actif (tour 3 : 005.6, 005.7, 005.62, 005.63 nouvelles ; 005.1, 005.33, 005.40, 005.60 amendées ; messages M-1 à M-6) |
-| SPEC-006 | Plan de vérification (test / client / policy / RA) | 002 | CA-002-1 à 36 | actif (amendé : §1, §2, §3, §5 ; tour 2 : §2, §3 ; arbitrage 2026-11-17 : CA-002-1 (c) en [P], CA-002-9 avec 005.61, policies renumérotées n° 25 à 27 ; décision 2026-11-17 : §2 CA-002-2, §3 policy n° 28 ; tour 3 : §2 CA-002-27, 28, 33, 34 et CA-002-37 à 39 proposés, §3 policies n° 29 à 31 ; tour 4 : §2 CA-002-1 (écart accepté, ADR-013 D-8), §3 policies 25 et 16 (c) précisées, policy n° 35 **validée** (item 19), garde esbuild « cas C gardé » (item 13)) |
+| SPEC-006 | Plan de vérification (test / client / policy / RA) | 002 | CA-002-1 à 36 | actif (amendé : §1, §2, §3, §5 ; tour 2 : §2, §3 ; arbitrage 2026-11-17 : CA-002-1 (c) en [P], CA-002-9 avec 005.61, policies renumérotées n° 25 à 27 ; décision 2026-11-17 : §2 CA-002-2, §3 policy n° 28 ; tour 3 : §2 CA-002-27, 28, 33, 34 et CA-002-37 à 39 proposés, §3 policies n° 29 à 31 ; tour 4 : §2 CA-002-1 (écart accepté, ADR-013 D-8), §3 policies 25 et 16 (c) précisées, policy n° 35 **validée** (item 19), garde esbuild « cas C gardé » (item 13) ; 2026-11-17 : §2 CA-002-3, §3 **items 20 (policy 36) et 21 (policy 37)**, écarts de policy consignés) |
 
 ## Décisions d'architecture
 | Id | Titre | Statut |
@@ -20,7 +20,7 @@
 | ADR-003 | Secrets générés hors git (`.devenv/secrets/`) et seed admin idempotent | accepté (amendé par ADR-012 : pas d'écrasement du mot de passe admin) |
 | ADR-004 | Deux piles (dev jetable, service persistante) et sauvegarde | accepté (amendé par ADR-007, ADR-008, ADR-009) |
 | ADR-005 | Sécurité : RLS forcée, écritures sensibles par RPC | accepté |
-| ADR-006 | Vérifiabilité de la pile dev : débit GoTrue (≥ 500 inscriptions/h), règle de même origine (code / `vendor/`), contrat `./dev` ↔ application | accepté (amende ADR-002 ; §3 amendé tour 2 : `env_file` longue) |
+| ADR-006 | Vérifiabilité de la pile dev : débit GoTrue (≥ 500 inscriptions/h), règle de même origine (code / `vendor/`), contrat `./dev` ↔ application | accepté (amende ADR-002 ; §3 amendé tour 2 : `env_file` longue ; §2 : preuve de provenance `/build-sha256.txt`, 2026-11-17) |
 | ADR-007 | Publication des ports : une seule adresse LAN par pile (`${APP_LAN_IP}:${APP_PORT}`), runner hors LAN | accepté ; **dérogation CA-002-1 validée par le PO** (perimetre.md, D1) |
 | ADR-008 | Tags des images construites localement, propres à chaque pile (`:dev`, `:service`) | accepté |
 | ADR-009 | Redémarrage automatique de toute la pile service (db, auth, rest, app) | accepté (tour 2) ; policy n° 26 |
@@ -254,3 +254,16 @@ Périmètre : `specs/` uniquement. Aucun autre fichier modifié.
 - **Cohérence** : README, SPEC-004.1, ADR-014 et ADR-015 sont alignés. Vérification faite par relecture des fichiers (aucun
   accès git dans cette session) ; l'existence de `dae9044` et l'identité de `001` à `005` restent celles vérifiées par le chef de projet.
 - **Ouvert** : version apt de git (ADR-015). Rien d'autre.
+
+## Complément de l'architecte, itération 002 (2026-11-17, demande du chef de projet) : empreintes du build et cache
+
+Périmètre : `specs/` uniquement. Fichiers modifiés : `SPEC-001-pile-supabase.md` (001.8 (c), **001.16**, **001.17**),
+`SPEC-006-plan-verification.md` (§2 CA-002-3, §3 **items 20 et 21**), `adr/ADR-006-verifiabilite-pile-dev.md` (§2, preuve de
+provenance), `README.md`. Aucun nouvel ADR (pas de choix structurant nouveau : la décision est ADR-006 §2).
+
+- Le fichier `/build-sha256.txt` (format exact, chemin, en-têtes) est décrit par SPEC-001.16 ; les en-têtes de cache et de
+  sécurité des sept chemins par SPEC-001.17 (policy 37).
+- **Écarts constatés, consignés, non corrigés** (les policies relèvent de `policy`) :
+  1. Policy 37 `GW-cache-et-entetes` : 5 chemins couverts sur 7 (`/index.html` et `/build-sha256.txt` absents).
+  2. Policy 36 `FRONT-bundle-servi-egal-source` : tolère `*` et `./` en tête de ligne ; ne vérifie pas `text/plain`.
+- Vérifications [R] (curl après `./dev deploy`) à consigner dans `iterations/002/mise-en-service.md`.
