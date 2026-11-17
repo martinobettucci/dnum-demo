@@ -1,6 +1,6 @@
 {
   "iteration": "002",
-  "date": "2026-11-17T14:57:11",
+  "date": "2026-11-17T15:01:19",
   "pile_demarree": true,
   "results": [
     {
@@ -55,7 +55,7 @@
       "file": "05-env-secrets-valeurs-absentes.sh",
       "status": "respectee",
       "rc": 0,
-      "output": "5 valeur(s) secrète(s) de 2 fichier(s) absentes de 243 fichiers (iterations/ comprises) et de deploy.log"
+      "output": "5 valeur(s) secrète(s) de 2 fichier(s) absentes de 254 fichiers (iterations/ comprises) et de deploy.log"
     },
     {
       "POLICY": "ENV-devenv-ignore",
@@ -281,11 +281,29 @@
       "status": "respectee",
       "rc": 0,
       "output": "seed.py : aucun PUT/PATCH/DELETE, POST /admin/users seulement si compte absent, aucun accès au fichier de secrets ; migrations et db.sh n'écrivent pas dans auth.users"
+    },
+    {
+      "POLICY": "FRONT-bundle-servi-egal-source",
+      "REF": "ADR-006 §2 | SPEC-001.8 | CA-002-2 | incident de recette itération 002 (bundle servi ≠ bundle construit)",
+      "QUAND": "deployed",
+      "file": "36-front-bundle-servi-egal-source.sh",
+      "status": "violee",
+      "rc": 1,
+      "output": "/build-sha256.txt absent ou non servi (statut 200, Content-Type « text/html », repli HTML possible) : empreintes du build non vérifiables, à produire par build.mjs dans dist/"
+    },
+    {
+      "POLICY": "GW-cache-et-entetes",
+      "REF": "SPEC-001.9 | ADR-002 | CA-002-3 | incident de recette itération 002 (navigateur client jamais rechargé)",
+      "QUAND": "deployed",
+      "file": "37-gw-cache-et-entetes.sh",
+      "status": "respectee",
+      "rc": 0,
+      "output": "5 fichiers servis en 200 : Cache-Control no-cache ; CSP, X-Content-Type-Options nosniff, Referrer-Policy présents"
     }
   ],
   "synthese": {
-    "respectee": 31,
-    "violee": 0,
+    "respectee": 32,
+    "violee": 1,
     "non_applicable": 0
   }
 }

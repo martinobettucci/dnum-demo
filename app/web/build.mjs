@@ -7,8 +7,11 @@
 // jamais copié dans l'image nginx finale). Il liste les entrées effectivement incluses dans le bundle.
 // Le script affiche la liste des paquets Node-only (whatwg-url, tr46, webidl-conversions, ws,
 // @supabase/node-fetch) trouvés dans le bundle, avec leur chemin, pour la décision de l'ADR-010.
+//   dist/build-sha256.txt    : empreintes sha256 de dist/app.js et dist/vendor/supabase.js, écrites EN DERNIER
+//                              (après leur écriture finale), format « <sha256>  <chemin> » (ADR-006 §2, policy 36).
 import { build } from 'esbuild';
-import { cp, mkdir, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 
 const commun = {
   bundle: true,
@@ -46,4 +49,12 @@ const esbuildDansBundle = Object.keys(vendor.metafile.inputs).filter((p) => /nod
 console.log(`metafile : meta/vendor-metafile.json (${Object.keys(vendor.metafile.inputs).length} entrées)`);
 console.log(`paquets Node-only dans dist/vendor/supabase.js : ${inclus.length === 0 ? 'aucun' : inclus.join(', ')}`);
 console.log(`esbuild dans dist/vendor/supabase.js : ${esbuildDansBundle.length === 0 ? 'non' : 'OUI'}`);
-console.log('front : dist/app.js, dist/vendor/supabase.js, dist/index.html, dist/style.css');
+// Empreintes du build : calculées sur les octets finaux de dist/ (après toutes les écritures ci-dessus).
+// Deux lignes, dans cet ordre, séparateur de deux espaces (format sha256sum), fin de ligne LF.
+const empreinte = async (chemin) => createHash('sha256').update(await readFile(`dist/${chemin}`)).digest('hex');
+const empreintes = ['app.js', 'vendor/supabase.js'];
+const lignes = await Promise.all(empreintes.map(async (c) => `${await empreinte(c)}  ${c}\n`));
+await writeFile('dist/build-sha256.txt', lignes.join(''));
+
+console.log('front : dist/app.js, dist/vendor/supabase.js, dist/index.html, dist/style.css, dist/build-sha256.txt');
+console.log(`empreintes : ${lignes.map((l) => l.trim().replace(/  /, ' ')).join(' | ')}`);

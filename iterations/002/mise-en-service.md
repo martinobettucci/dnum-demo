@@ -1,5 +1,40 @@
 Mise en service assurée exclusivement par le responsable applicatif. Aucun autre agent ne démarre, n'arrête ni ne détruit la pile : adressez vos demandes au chef de projet.
 
+## Redéploiement DEV sans reset (fin d'itération 002, étape 1 de structure, 2026-11-17 ~14:58 UTC)
+
+- Commande : `./dev build` (rc 0, 5 s, images `:dev` et `:service` reconstruites) puis `./dev deploy dev` (rc 0, **12 s**).
+- Version déployée : commit **a4d5b4d** + modifications **non commitées** `app/Dockerfile`, `app/nginx/default.conf` (correctif `Cache-Control: no-cache`), `dev` (build reconstruit `:service`). Le correctif n'est pas encore commité.
+- Services dev : `app` (healthy), `db` (healthy), `auth` (healthy), `rest`, `client` (recréé). Aucun reset, aucun teardown. Volume `devenv_db-data` non recréé.
+- Images utilisées :
+  - `devenv/app:dev` : id `sha256:70b36b559a91…` (création 2026-11-17 14:56:45 UTC) ; conteneur `devenv-app-1` recréé à 14:58:40 UTC.
+  - `devenv/app:service` : id `sha256:20ea576bcb08…` (création 2026-11-17 14:56:45 UTC).
+- URL : http://10.77.0.25:8080/
+
+### Contrôle du front servi (empreintes, pas grep brut)
+
+- md5 de `/app.js` servi : **`4eb8c08e9af484992a63298ad56423c8`** (19 354 octets). Conforme à l'attendu de la Team Agile.
+- Séquence échappée `pour la t\xE2che` (« pour la tâche ») : 2 occurrences dans le bundle servi. Séquence `pour la t\u00e2che` : 0.
+
+### En-têtes HTTP (:8080)
+
+| Ressource | Statut | Cache-Control |
+|---|---|---|
+| `/` | 200 | `no-cache` |
+| `/app.js` | 200 | `no-cache` |
+| `/vendor/supabase.js` | 200 | `no-cache` |
+
+### Santé et non-intrusion de la pile service (:8081)
+
+- Conteneurs `dnum-service-{app,rest,auth,db}-1` : identiques avant/après (mêmes ids, mêmes heures de démarrage, healthy/up inchangés). Aucune action `service` exécutée.
+- Volume `dnum-service_db-data` : créé 2026-11-17 13:33:40 UTC, inchangé.
+- Comptages (avant → après) : auth.users 8 → 8 ; auth.identities 8 → 8 ; auth.sessions 10 → 10 ; auth.schema_migrations 61 → 61 ; public.profiles 8 → 8 ; public.tasks 3 → 3 ; public.time_entries 1 → 1 ; public.help_proposals 1 → 1.
+- **Écart constaté** : auth.refresh_tokens 10 → 11 pendant la fenêtre. Non causé par une action de ce redéploiement (aucune commande sur `service` ; le GoTrue de service tourne depuis 13:34). Probablement un rafraîchissement de session utilisateur ordinaire ; non investigué à ce stade, à signaler à structure.
+- `GET http://10.77.0.25:8081/` : 200.
+
+### Incidents
+
+Aucun. Build et déploiement rc 0 du premier coup.
+
 # Itération 002 — tour 3 : BASCULE dev vers service (exécution, 2026-11-17)
 
 - Statut : **SERVICE PRÊTE (pré-bascule)**. Étapes 1 à 6 du chef de projet exécutées et vérifiées. Les étapes de coupure (gel de dev, sauvegarde finale après gel, proxy, validation utilisateur : S5 à S16) **ne sont pas jouées** dans ce tour.

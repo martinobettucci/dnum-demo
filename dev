@@ -141,6 +141,7 @@ PY
       dc up -d --build --wait app
     fi
     [[ $PILE == dev ]] && dc --profile client up -d client
+    [[ $PILE == dev ]] && dc --profile client up -d --force-recreate client
     echo "{\"date\":\"$(now)\",\"iteration\":\"$it\",\"pile\":\"$PILE\",\"commit\":\"$(git rev-parse --short HEAD 2>/dev/null || echo non-commite)\",\"duree_s\":$(( $(date +%s)-t0 ))}" >> .devenv/deploy.log
     echo "Mise en service ($PILE) OK en $(( $(date +%s)-t0 )) s — http://${APP_LAN_IP}:${APP_PORT}/" ;;
   teardown) dc --profile client --profile tools --profile deploy down --remove-orphans ;;
