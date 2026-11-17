@@ -37,6 +37,7 @@ Ce sont les points laissés « NON TRANCHÉ » par l'acceptation du PO (`perimet
 | C11 | Coût : le relevé définitif est fait après `./dev iteration-close` (fin renseignée), en 2 relevés additionnés (agents de rôle et sessions d'équipe). Voir `cout.md`. |
 | E6 | Décompte des [T] (49 contre 46) : écart de comptage documentaire, ACCEPTÉ. La revue documentaire 003 le réconcilie. |
 | E3 / E4 / E7 / E8 | Correspondances proposées par le PO CONFIRMÉES : E3 = U1, E4 = table A ligne 2, E7 = C5, E8 = C2. C13 relève de la configuration (ADR-009, restart sur service) : il est conforme sur service, et l'absence de restart sur dev est voulue. |
+| G1 | CA-002-36 [T], refus d'une restauration à un niveau de migration différent : **REPORT nommé en 003** (BL-003-7). Dev est gelée et sert de copie de retour arrière pendant 7 jours : on n'y joue aucun restore, même refusé. Les autres sous-cas de CA-002-36 sont prouvés ([R] : devenv inchangé, reset service sans confirmation refusé). |
 | C9 / C10 / C12 | Voir ci-dessous. Tout est commité et poussé. L'inscription de 13:00 est un utilisateur réel passé par le proxy, il fait partie des 8 comptes réels. |
 
 ## Correction de l'acceptation PO (point 8)

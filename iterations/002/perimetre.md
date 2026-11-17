@@ -512,3 +512,76 @@ Le point 8 (mise à jour de `service`) est une action en attente d'autorisation,
 
 Rien de ce qui précède n'est réputé accepté par ce document. Le verdict sera repris quand les points 1 à 7 seront tranchés
 ou consignés comme reports nommés par le chef de projet.
+
+### D. Décisions du chef de projet consignées (`cloture.md`, 2026-11-17)
+
+Le PO reprend ici les décisions de `cloture.md` (lecture seule) par identifiant. Il ne les reformule pas au-delà de
+ce qui est nécessaire à la lecture.
+
+| Point | Décision du chef de projet (cloture.md) | Statut retenu par le PO |
+|---|---|---|
+| C9 | Écart de version **accepté temporairement** : service `3c93a08`, dev `29a3980`. `app/web` et migrations identiques ; diffèrent nginx, `build-sha256` et l'outillage. Résorbé au premier `deploy service` autorisé. | **ACCEPTÉ TEMPORAIRE** ; résorption = action en attente (§ E.1) |
+| CA-002-40, sous-cas « compte existant non confirmé » | **REPORT nommé** en 003 (test du stub GoTrue, SPEC-003.11). Cas nominal prouvé : policy 35, 3 tests SPEC-003.10 (`tests/test_003_admin.py`), seed réel sur service. | **REPORTÉ** : BL-003-6 (§ F) |
+| C3 | Couverture de CA-002-40 telle que décrite ci-dessus (policy 35 + 3 tests ; test de SPEC-003.11 au backlog 003). | **DÉCIDÉ** (même report que ci-dessus) |
+| C11 | Coût définitif relevé **après** `./dev iteration-close`, en 2 relevés additionnés (agents de rôle, sessions d'équipe). | **DÉCIDÉ** ; exécution par le sponsor (`cout.md`) |
+| E6 | Décompte [T] 49 contre 46 : écart documentaire **accepté**, réconcilié par la revue documentaire 003. | **ACCEPTÉ** |
+| E3 / E4 / E7 / E8 | Correspondances confirmées : E3 = U1, E4 = table A ligne 2, E7 = C5, E8 = C2. | **CONFIRMÉ** |
+| C13 | Configuration conforme sur service ; l'absence de restart sur dev est voulue (ADR-009). | **DÉCIDÉ** (remplace « accepté en l'état » de la ligne C13 du § C.1) |
+| C2, C4, C5, C6, C7, C8, C10, C12, C14, C15, E1, E2, E5, E9, U1, S14 | Décisions inscrites dans `cloture.md` ; reprises telles quelles dans § C.1. | **DÉCIDÉ** |
+| S15 | Validation des comptes réels sur dnum.lelabs.tech. | **ACTION de l'utilisateur**, pas une décision |
+| P6 | Réservation DHCP de `10.77.0.25`. | **ACTION de l'utilisateur**, pas une décision |
+
+Point 8 (mise à jour de `service` avec les correctifs nginx) : **action en attente**, non une décision (voir § A et § C.3).
+
+### E. Actions en attente (non conditions de décision)
+
+1. **Mise à jour de la pile `service`** (nginx `Cache-Control: no-cache`, en-têtes de sécurité par location,
+   `build-sha256`) : `./dev backup service` puis `./dev deploy service` sans `reset`, sur autorisation de l'utilisateur.
+   Résorbe l'écart C9.
+2. **S15** : l'utilisateur valide ses comptes réels sur dnum.lelabs.tech.
+3. **P6** : réservation DHCP de `10.77.0.25`.
+4. **C11** : relevé définitif du coût après `./dev iteration-close` (sponsor).
+
+### F. Backlog 003 : ajout
+
+| Id | Report | Origine | Priorité proposée | Sortie attendue |
+|---|---|---|---|---|
+| BL-003-6 | **Test du stub GoTrue pour SPEC-003.11** : si le compte `ADMIN_EMAIL` existe sans e-mail confirmé, le seed sort avec un code non nul, sans secret dans sa sortie et sans rien modifier (sous-cas de CA-002-40). | Clôture 002, décision CA-002-40 | MUST (sous-cas d'une story Must, seul [T] ouvert de US-2) | Test écrit par le testeur ; SPEC-003.11 vert |
+
+Le PO de 003 fixe la numérotation définitive `CA-003-x`.
+
+### G. Contrôle d'exhaustivité
+
+Contrôle fait sur : le § C.3 (points 1 à 7), les tables A et B, et les identifiants de `cloture.md`.
+
+- **Points du § C.3** : 1 (point 8) = action en attente ; 2 (C9) = accepté temporairement ; 3 (CA-002-40) = reporté ;
+  4 (C11) = décidé ; 5 (E6) = accepté ; 6 (E3, E4, E7, E8) = confirmés ; 7 (S15, P6) = actions. **Tous tranchés.**
+- **Table A** : 1 à 6 traités ; 7a (O3, E10) accepté, trace couverte par C14 ; 7b (O4, date d'audit et paquet dans
+  `mise-en-service.md`) : correction consignée par le responsable applicatif (`journal/134832`), non relue par le PO,
+  non bloquante selon la réaction ; 7c et 7d reportés (BL-003-4, BL-003-5) ; 8 = action (§ E.1).
+- **Table B** : tous les identifiants ont une décision dans `cloture.md`, ou sont couverts par une ligne de § D.
+
+**Un point reste sans décision.** Ce n'est pas un point de `cloture.md` : c'est un sous-cas [T] de CA-002-36 que
+ni la liste du chef ni le § C.3 ne mentionnaient.
+
+- **G1 : CA-002-36, partie [T] « une restauration vers un niveau de migration différent est refusée »** (§ 4).
+  - Aucun test : `tests/test_004_piles.py` ne contient pas de cas de refus. `test_restauration_service_restitue_le_jeu_marque`
+    est **SKIPPED** dans `iterations/002/tests/junit.xml` (« à exécuter avec `DEVENV_PILE=service` »).
+  - Aucun [R] consigné : `mise-en-service.md` mentionne le contrôle de niveau en S8 (contrôle réussi), pas son refus.
+    La sortie brute du refus (c), citée par le responsable applicatif, n'est pas dans les sources lues
+    (`observation.md` l.548 ; la policy 24 est une simulation, l.184).
+  - Le refus existe dans `./dev` (ligne 177) : le code est présent, sa preuve ne l'est pas.
+  - **C5 ne couvre pas ce point** : C5 vise SPEC-004.3, 004.7 et 004.8 vérifiées par [R], et le refus n'y est consigné nulle part.
+  - Décision attendue du chef de projet, au choix :
+    (a) **exiger la preuve** : le responsable applicatif lance `./dev restore service <sauvegarde de niveau de migration différent>`
+    (refus attendu, rc ≠ 0, rien restauré), et consigne la commande, la sortie brute et l'horodatage dans `mise-en-service.md` ;
+    (b) **reporter nommément** le sous-cas refus au backlog 003, comme CA-002-40.
+  - Le PO recommande (a) : le refus n'altère rien, et il ferme le seul [T] de US-17 non prouvé.
+
+### H. Verdict
+
+**Acceptation formelle de clôture de l'itération 002 : NON PRONONCÉE.**
+
+Ce qui manque : **une décision sur G1** (preuve exigée ou report nommé). Rien d'autre n'est ouvert dans `cloture.md`.
+Dès que le chef de projet a tranché G1, le PO prononce l'acceptation sans autre condition. Les actions de § E
+restent à suivre et ne conditionnent pas cette décision.
