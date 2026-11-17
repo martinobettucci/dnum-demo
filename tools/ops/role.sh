@@ -8,5 +8,14 @@ mkdir -p "iterations/$it/journal"; log="iterations/$it/journal/$(date +%H%M%S)-$
 tools="Read Glob Grep Write Edit"
 grep -qE '^tools:.*\bBash\b' ".claude/agents/$agent.md" && tools="$tools Bash"
 { echo "# $agent — $(date -Iseconds)"; echo; echo "## Brief"; echo "$brief"; echo; echo "## Compte rendu"; } > "$log"
-claude -p --agent "$agent" --permission-mode acceptEdits --allowedTools $tools -- "$brief" >> "$log" 2>&1
+# Brief privé optionnel (identifiants de recette…) : .devenv/private/<agent>.brief (0600, hors git),
+# ajouté au prompt mais JAMAIS écrit dans le journal ; consommé (supprimé) après usage.
+priv=".devenv/private/$agent.brief"; full="$brief"
+if [[ -f "$priv" ]]; then
+  full="$brief
+
+--- Brief privé (ne jamais recopier ces informations dans un compte rendu) ---
+$(cat "$priv")"; rm -f "$priv"; echo "_(brief privé fourni, non journalisé)_" >> "$log"
+fi
+claude -p --agent "$agent" --permission-mode acceptEdits --allowedTools $tools -- "$full" >> "$log" 2>&1
 echo "$log"
