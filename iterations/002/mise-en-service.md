@@ -313,7 +313,60 @@ Règle : aucun `reset` de dev avant la fin de la période D4 et la validation de
 
 Mise en service assurée exclusivement par le responsable applicatif. Aucun autre agent ne démarre, n'arrête ni ne détruit la pile : adressez vos demandes au chef de projet.
 
-- Audit : `iterations/002/policies/audit-npm.meta.json`, `"statut": "reussie"`, date `2026-11-17T13:40:30+00:00`, image `node:22.12.0-alpine`.
+- Audit : `iterations/002/policies/audit-npm.meta.json`, `"statut": "reussie"`, date `2026-11-17T13:45:51+00:00`, image `node:22.12.0-alpine`.
 - Fichier lock : `app/web/package-lock.json`, sha256 `2bbd9f50bff63cd1e3a5dfc333ae786690fccdc4753c3470c70d410ce53f9eb9`. Vérifié à la rédaction : le sha256 du fichier actuel est identique (aucune dérive depuis l'audit).
-- Résultat de la policy `FRONT-audit-npm` (`iterations/002/policies/results.json`) : respectée, rc 0, sha256 du lock concordant. Le rapport `audit-npm.json` remonte 3 paquets (avis GHSA-67mh-4wv8-2f99 sur esbuild, GHSA-8r88-6cj9-9fh5 sur auth-js, et un troisième).
+- Résultat de la policy `FRONT-audit-npm` (`iterations/002/policies/results.json`) : respectée, rc 0, sha256 du lock concordant. Le rapport `audit-npm.json` remonte 3 paquets (avis GHSA-67mh-4wv8-2f99 sur esbuild, GHSA-8r88-6cj9-9fh5 sur auth-js, et `@supabase/supabase-js` (sévérité low, dépendance directe, via auth-js)).
 - Statut de l'écart : **consigné**. Reste à relire ces deux valeurs par la vérification [R] d'ADR-014 (étape G de `reaction.md`).
+
+---
+
+# Itération 002 — tour 4 : fin de bascule, sauvegarde finale de dev, delta vers service, redéploiement de dev (2026-11-17, 13:57–13:59 UTC)
+
+- Statut : **SUCCÈS**. Étapes a et b du signal du chef de projet exécutées. **Delta migré vers service : nul.** Aucune écriture sur service. Aucun `reset`, `teardown` ni destruction. Pas de contournement.
+- Version déployée sur **dev** : commit **`899ee3e`** (HEAD ; `app/` et `stack/` propres, aucune modification non commitée sur le code). Service : commit **`3c93a08`**, **non redéployé** (hors périmètre de ce tour).
+- Durées : `deploy dev` 10 s (rc 0).
+- Incidents : **aucun**.
+
+## a) Sauvegarde finale de dev et comparaison dev / service
+
+| Étape | Action | Résultat |
+|---|---|---|
+| a1 | `./dev backup dev` | rc 0. Dump `20261117-135659` (+ `.json`, migration `005`). |
+| a2 | Contrôle du contenu de données entre le dump de 13:33 et celui de 13:57 | **Identique** (diff vide sur la sortie de données complète). Aucune création ni modification sur dev depuis 13:33. |
+| a3 | Identifiants de dev créés après 13:33 (comptes, profils, tâches, temps, propositions) | **0** sur chaque table. |
+| a4 | Comparaison des comptes réels et de leurs données, dev ↔ service (par identifiant, puis par contenu) | Identifiants : **0** écart dans chaque sens. Contenu : **0** ligne différente. |
+
+Comptages avant (nombres seulement) :
+
+| Élément | dev | service |
+|---|---|---|
+| Comptes (total) | 393 | 8 |
+| Comptes réels | 8 | 8 |
+| Comptes de test | 385 | 0 |
+| Profils | 393 | 8 |
+| Tâches | 176 | 3 |
+| Temps | 37 | 1 |
+| Propositions | 48 | 1 |
+| Migrations | 5 | 5 |
+
+- **Delta à migrer : 0.** Aucune transaction de migration n'a donc été ouverte. Le contrôle préalable (annulation si un compte existant de service serait modifié) n'avait pas d'objet.
+- Les 385 comptes de test présents sur dev ne sont pas migrés (périmètre : comptes réels uniquement).
+
+Comptages après (aucune écriture sur service) : service inchangé : 8 comptes, 8 profils, 3 tâches, 1 temps, 1 proposition. Empreinte des données réelles de service identique avant et après (`82c3bce2416e`).
+
+## b) Redéploiement de dev sans reset
+
+- `./dev deploy dev` (sans `reset`, sans `teardown`) : rc 0, 10 s. Migrations déjà appliquées ignorées ; compte administrateur existant conservé (seed idempotent) ; secrets existants conservés.
+- Santé : `app` healthy, `db` healthy, `auth` healthy, `rest` up, `client` up.
+- HTTP : `http://10.77.0.25:8080/` → **200**. Service `http://10.77.0.25:8081/` → **200**.
+- Dev après déploiement : 393 comptes, 176 tâches, 37 temps, 48 propositions (inchangés).
+
+## Service : preuve de non-intervention
+
+- Conteneurs `dnum-service-{app,auth,db,rest}-1` : mêmes identifiants, images, statut ; volume `dnum-service_db-data` présent et inchangé.
+- Données : empreinte identique avant et après (voir plus haut).
+- Le délai de 13:57 à 13:59 n'a porté que sur dev.
+
+## Confidentialité
+
+Aucun secret, e-mail ni nom dans ce compte rendu. Les comptages et identifiants de travail sont restés dans `.devenv/delta/` (ignoré par git). Ce fichier n'est **pas commité** : décision à prendre par le chef de projet.

@@ -1,54 +1,66 @@
-# Itération 002 — Coût (sponsor, tour 2, mesure partielle)
+# Itération 002 — Coût (sponsor, fin d'itération)
 
-Source : `./dev cout` → `iterations/002/cout.json` (relevé à 12:34 UTC). `fin` est `null` : l'itération n'est pas close, les chiffres sont cumulés depuis le début (11:39:13 UTC).
+Source : `./dev cout` → `iterations/002/cout.json`, relevé à **14:29 UTC**. Début 11:39:13 UTC. `fin` est encore `null` dans le relevé : l'itération n'est **pas clôturée** au moment de la mesure. Les chiffres ci-dessous sont donc un cumul à 14:29, pas un coût définitif.
 
 ## 1. Synthèse
 
 | Indicateur | Valeur |
 |---|---|
-| Coût cumulé estimé (équivalent API) | **7,81 USD** (7,8130) |
-| Durée écoulée | 54,7 min |
-| Requêtes | 321 (103 Opus, 218 Haiku) |
-| Boucles AOPR documentées | **0** — `observation.md` n'existe pas ; `iterations/002/policies/` est vide (aucun résultat de `./dev policies` archivé) |
-| Critères constatés livrés | **0** — pas d'observation, recette client en cours (3 captures dans `client/`) |
-| Coût par critère livré | **Non calculable** (dénominateur nul). Indicatif : 7,81 / 24 CA visés dans la table de couverture de la recette ≈ 0,33 USD par CA visé, non constaté |
+| Coût cumulé estimé (équivalent API) | **12,69 USD** (12,6858) |
+| Durée à la mesure | 170,7 min (2 h 51) |
+| Requêtes | 2 295 (103 Opus, 2 192 Haiku) |
+| Boucles AOPR (restitutions d'`observation.md`) | **3** : tour 2, tour 3, tour 3 bis (final). 11 sections `##` au total |
+| Policies exécutées | `policies/results.json` : 31 respectées, 0 violée, 0 non applicable (`pile_demarree: true`, 13:46) |
+| Critères [C] recettés OK | **22** (sur 28 critères [C] décomptés en tour 3), plus 2 réserves (CA-002-9, CA-002-27) et 1 KO partiel (CA-002-28) |
+| Coût par critère [C] OK | **≈ 0,58 USD** (12,69 / 22) ; ≈ 0,45 USD par critère [C] visé (12,69 / 28), indicatif |
 
-## 2. Ventilation par modèle (recalculée avec `tools/sponsor/tarifs.json`)
+## 2. Ventilation par modèle (`tools/sponsor/tarifs.json`, recalcul vérifié)
 
 | Modèle | Requêtes | Input | Output | Cache écriture | Cache lecture | Coût USD | Part |
 |---|---|---|---|---|---|---|---|
-| claude-opus-5-5 | 103 | 206 | 212 543 | 405 457 | 5 049 029 | 7,2888 | 93,3 % |
-| claude-haiku-5-5 | 218 | 436 | 459 855 | 1 151 330 | 15 028 917 | 0,5242 | 6,7 % |
+| claude-opus-5-5 | 103 | 206 | 212 543 | 405 457 | 5 049 029 | 7,2888 | 57,4 % |
+| claude-haiku-5-5 | 2 192 | 4 384 | 1 689 620 | 4 898 420 | 393 949 035 | 5,3970 | 42,6 % |
 
-Décomposition :
+Décomposition par type de jeton (recalcul : Opus 7,2888 ; Haiku 5,3970 ; total 12,6858) :
 
-- Opus : output 4,25 USD (58 %), écriture de cache 2,03 USD (26 %), lecture de cache 1,01 USD (13 %), input 0,001 USD.
-- Haiku : output 0,23 USD (44 %), lecture de cache 0,15 USD (29 %), écriture de cache 0,14 USD (27 %), input négligeable.
+- Opus : output 4,25 USD, écriture de cache 2,03 USD, lecture de cache 1,01 USD, input 0,001 USD.
+- Haiku : lecture de cache 3,94 USD, output 0,84 USD, écriture de cache 0,61 USD, input négligeable.
+- Tous modèles : sortie 5,10 USD (40 %), lecture de cache 4,95 USD (39 %), écriture de cache 2,64 USD (21 %), input 0,001 USD.
 
-Les recalculs (Opus 7,2888 ; Haiku 0,5241) concordent avec le `cout.json`. Le poste dominant reste la sortie d'Opus.
+## 3. Durée et cadence
 
-## 3. Évolution depuis le tour 1 (19,4 min, 6,32 USD)
+- Durée : 170,7 min. Coût moyen : 0,074 USD/min.
+- Entre le relevé précédent de cette itération (54,7 min, 7,81 USD) et celui-ci : +116 min, +4,87 USD, soit **≈ 0,042 USD/min** de coût marginal.
 
-| | Tour 1 | Tour 2 | Écart |
+## 4. Comparaison
+
+**Avec le relevé précédent de l'itération 002 (54,7 min, 7,81 USD) :**
+
+| | Relevé précédent | Relevé final | Écart |
 |---|---|---|---|
-| Coût cumulé | 6,32 USD | 7,81 USD | +1,49 USD (+23,6 %) |
-| Durée | 19,4 min | 54,7 min | +35,3 min |
-| Requêtes Opus | 89 | 103 | +14 |
-| Requêtes Haiku | 1 | 218 | +217 |
-| Coût Opus | 6,32 USD | 7,29 USD | +0,97 USD |
-| Coût Haiku | 0,001 USD | 0,52 USD | +0,52 USD |
-| Coût marginal | — | ≈ 0,042 USD/min sur l'intervalle | — |
+| Coût cumulé | 7,81 USD | 12,69 USD | +4,87 USD (+62 %) |
+| Durée | 54,7 min | 170,7 min | +116 min |
+| Requêtes Opus | 103 | 103 | 0 |
+| Requêtes Haiku | 218 | 2 192 | +1 974 |
+| Coût Opus | 7,2888 USD | 7,2888 USD | **0** (anomalie, voir § 6) |
+| Coût Haiku | 0,5242 USD | 5,3970 USD | +4,87 USD |
 
-Le coût moyen par minute baisse (0,33 → 0,14 USD/min) parce que la durée a presque triplé, mais le coût marginal du tour 2 est d'environ 0,04 USD/min. Le fait marquant est la hausse de 1 à 218 requêtes Haiku, qui n'est pas expliquée par les données disponibles (voir limites).
+**Avec l'itération 001 :** `iterations/001/cout.json` donne 0,43 USD (Opus, 9 requêtes) pour 1,9 min. Ce relevé est un instantané très précoce (le cumul n'a pas été relancé ensuite, `fin` null) : la comparaison de coût total n'est pas significative. L'itération 001 n'a pas de `cout.md`.
 
-## 4. Limites de la mesure
+## 5. Limites de la mesure
 
-- **Périmètre de l'agrégation** : `./dev cout` agrège l'usage Claude Code depuis le début de l'itération, sans filtre par session ni par agent. Les 218 requêtes Haiku peuvent provenir d'autres sessions de la machine ou de sous-agents ; la colonne `sous_agents` vaut 0 partout, ce qui ne permet pas de trancher. Attribution par rôle impossible en l'état.
-- **Mesure partielle** : `fin` est `null`. Le coût final doit être relevé après clôture.
-- **Tarifs à vérifier** : tarifs publics relevés le 2026-11-17 (`tools/sponsor/tarifs.json`), à confirmer avant tout usage contractuel.
+- **Non clôturée** : `fin` est `null`. Ce chiffre est un cumul à 14:29 UTC. Un relevé définitif demande `./dev cout` après clôture.
+- **Périmètre non filtré** : `./dev cout` agrège tout l'usage Claude Code depuis 11:39 UTC, sans filtre par session ni par agent. La colonne `sous_agents` vaut 0 partout : l'attribution par rôle (developpeur, testeur, client, sponsor, etc.) n'est pas possible. Les 2 192 requêtes Haiku peuvent venir d'autres sessions de la machine.
+- **Tarifs à vérifier** : tarifs relevés le 2026-11-17 dans `tools/sponsor/tarifs.json`. Non vérifiés contre la grille officielle à cette date. Pas d'usage contractuel sans vérification.
 - **Équivalent API, pas facturation** : sous abonnement Claude, le coût réel diffère (forfait).
-- **Pas de constat livré** : le coût par critère reste indicatif tant qu'aucune observation ni recette n'a validé de critère.
+- **Critères livrés partiels** : les 22 critères OK viennent de la recette du tour 2. La recette du tour 3 (corrections CA-002-27/28/34/37/38/39) n'a pas été exécutée (gel de la pile `dev`). Ces critères ne sont donc pas constatés livrés. Les critères [T] et [R] ne sont pas recettés par le client : ils ne figurent pas au dénominateur.
+- **Recette à la souris et au clavier uniquement** : le compte rendu client signale une réserve sur l'étape 6 bis (URL non vérifiable) et un incident d'exécution à l'étape 13. Ces points n'invalident pas les 22 critères, mais ils fragilisent le décompte.
+- **Lecture de l'observation** : les 3 restitutions sont cumulées dans `observation.md`. Je compte les boucles par restitution, pas par cycle de policy.
 
-## 5. Recommandation
+## 6. Anomalie de mesure à vérifier
 
-Restreindre la mesure aux seules sessions de l'itération (ou ventiler par session/agent) avant de comparer les tours : la hausse Haiku de 1 à 218 requêtes ne peut pas être imputée à un rôle avec les données actuelles.
+Le coût Opus est **identique à 4 décimales** (7,2888 USD, 103 requêtes, mêmes jetons) entre le relevé précédent (54,7 min) et celui-ci (170,7 min), alors que la session a continué pendant 116 min et que Haiku a progressé de 1 974 requêtes. Soit l'agrégation Opus ne voit plus les sessions Opus après 54,7 min, soit le relevé précédent était déjà recalculé. Dans les deux cas le total Opus est suspect. À vérifier avant toute comparaison de coût par agent ou par tour.
+
+## 7. Recommandation
+
+Relancer `./dev cout` à la clôture (`fin` renseigné) et vérifier pourquoi le coût Opus ne bouge pas entre deux relevés. Sans cela, le chiffre de 12,69 USD n'est ni définitif ni attribuable.

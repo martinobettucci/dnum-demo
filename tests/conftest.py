@@ -104,6 +104,9 @@ def lire_env(path):
 CLES_SECRETES = re.compile(r"PASSWORD|SECRET|KEY|TOKEN", re.IGNORECASE)
 JWT_MASQUE = re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+")
 MOTIFS_MASQUES = (re.compile(r"Test-[0-9a-f]{16}"), re.compile(r"P-[0-9a-f]{24}"))
+# E-mails : aucune adresse dans les rapports (junit.xml, resultat.txt), y compris ADMIN_EMAIL
+# (non couvert par CLES_SECRETES, mais réaffiché avec le dictionnaire secrets_env dans les explications).
+MOTIF_EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 
 
 def valeurs_secretes():
@@ -124,6 +127,7 @@ def masquer(texte):
     for v in valeurs_secretes():
         texte = texte.replace(v, "<secret masqué>")
     texte = JWT_MASQUE.sub("<jwt masqué>", texte)
+    texte = MOTIF_EMAIL.sub("<e-mail masqué>", texte)
     for motif in MOTIFS_MASQUES:
         texte = motif.sub("<mot de passe masqué>", texte)
     return texte

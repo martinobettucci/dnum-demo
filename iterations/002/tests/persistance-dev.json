@@ -1,12 +1,12 @@
 {
   "pile": "dev",
-  "ecrit_le": "2026-11-17T12:31:19+00:00",
-  "ecrit_le_deploy": "2026-11-17T12:31:19+00:00",
-  "membre_email": "persist-19448d8c-8ddd-40bb-8af4-cd71b31e8f50@test.invalid",
-  "membre_id": "b6140bde-6cd1-488e-9bab-47689758f069",
-  "task_id": "ec63b44a-b855-4683-8d0e-85cb4b431ecd",
-  "task_title": "persist-20261117-123119-cf6a37",
+  "ecrit_le": "2026-11-17T13:59:46+00:00",
+  "ecrit_le_deploy": "2026-11-17T13:59:46+00:00",
+  "membre_email": "persist-ec23d77f-5a3a-43a4-9825-3e299d7e2978@test.invalid",
+  "membre_id": "d98ba768-3568-44b4-a19c-b4abcb69ab27",
+  "task_id": "c4adc1dc-0454-46a7-a20f-62b6465f6fdc",
+  "task_title": "persist-20261117-135945-5e3d61",
   "logged_hours": 1.25,
-  "proposal_id": "02635e7a-642a-4050-a3ef-54c84b207313",
+  "proposal_id": "ff82bcb6-2b14-4f9e-9a9f-1ceff8d98db4",
   "admin_empreinte": "b1678d3628045a29"
 }
