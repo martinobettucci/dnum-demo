@@ -1,16 +1,16 @@
 {
   "iteration": "002",
-  "date": "2026-11-17T13:17:06",
+  "date": "2026-11-17T13:24:22",
   "pile_demarree": true,
   "results": [
     {
       "POLICY": "ENV-images-epinglees",
-      "REF": "ENV | SPEC-001.2 | CA-002-2",
+      "REF": "ENV | SPEC-001.2 | SPEC-004.16 | ADR-008 | CA-002-2",
       "QUAND": "always",
       "file": "00-env-images-epinglees.sh",
-      "status": "violee",
-      "rc": 1,
-      "output": "1 image(s) non épinglée(s) : stack/compose.service.yml: service app image: devenv/app:service"
+      "status": "respectee",
+      "rc": 0,
+      "output": "14 références d'image (FROM + image:) vérifiées : tags exacts, images locales au tag de leur pile (ADR-008)"
     },
     {
       "POLICY": "ENV-dependances-epinglees",
@@ -53,9 +53,9 @@
       "REF": "SPEC-003.3 | SPEC-003.6 | SPEC-003.7 | SPEC-006 §1 | CA-002-2",
       "QUAND": "always",
       "file": "05-env-secrets-valeurs-absentes.sh",
-      "status": "violee",
-      "rc": 1,
-      "output": "2 fuite(s) de secret : iterations/002/tests/junit.xml contient dev.env:ADMIN_PASSWORD ; iterations/002/tests/junit.xml contient dev.env:JWT_SECRET"
+      "status": "respectee",
+      "rc": 0,
+      "output": "5 valeur(s) secrète(s) de 1 fichier(s) absentes de 198 fichiers (iterations/ comprises) et de deploy.log"
     },
     {
       "POLICY": "ENV-devenv-ignore",
@@ -149,12 +149,12 @@
     },
     {
       "POLICY": "STACK-ports",
-      "REF": "SPEC-001.3 | ADR-001 | CA-002-1 | CA-002-3",
+      "REF": "SPEC-001.3 | ADR-007 | CA-002-1 | CA-002-3",
       "QUAND": "always",
       "file": "21-stack-ports.sh",
-      "status": "violee",
-      "rc": 1,
-      "output": "ports non conformes : compose.yml : app non publié sur 127.0.0.1"
+      "status": "respectee",
+      "rc": 0,
+      "output": "seul app publie un port : ${APP_LAN_IP:-10.77.0.25}:${APP_PORT}:80 (ADR-007), aucune publication sur 127.0.0.1 ou 0.0.0.0, surcouche sans ports"
     },
     {
       "POLICY": "DB-migrations-versionnees",
@@ -182,11 +182,101 @@
       "status": "respectee",
       "rc": 0,
       "output": "garde-fou conforme sur 70 cas simulés (deploy/teardown/reset/backup/restore réservés au responsable-applicatif)"
+    },
+    {
+      "POLICY": "FRONT-audit-npm",
+      "REF": "SPEC-001.15 (b)(c) | ADR-010 | CA-002-2",
+      "QUAND": "always",
+      "file": "25-front-audit-npm.sh",
+      "status": "violee",
+      "rc": 1,
+      "output": "audit npm non exécutée (échec, pas « réussie ») : npm n'a pas rendu de rapport d'audit"
+    },
+    {
+      "POLICY": "STACK-restart-service",
+      "REF": "SPEC-004.7 | ADR-009 | CA-002-36",
+      "QUAND": "always",
+      "file": "26-stack-restart-service.sh",
+      "status": "respectee",
+      "rc": 0,
+      "output": "restart unless-stopped sur db, auth, rest, app (surcouche service) ; aucune politique sur migrate, seed, runner, client ; aucune dans la pile dev"
+    },
+    {
+      "POLICY": "DEV-sortie-url",
+      "REF": "SPEC-004.17 | SPEC-004.15 | ADR-007 | CA-002-1",
+      "QUAND": "always",
+      "file": "27-dev-sortie-url.sh",
+      "status": "respectee",
+      "rc": 0,
+      "output": "./dev sans 127.0.0.1, localhost ni 0.0.0.0 ; APP_LAN_IP exporté avec APP_PORT (ligne 25) ; sortie http://${APP_LAN_IP}:${APP_PORT}/"
+    },
+    {
+      "POLICY": "FRONT-auth-js-non-appel",
+      "REF": "SPEC-001.15 (e) | ADR-010 (voie 1) | CA-002-2",
+      "QUAND": "always",
+      "file": "28-front-auth-js-non-appel.sh",
+      "status": "respectee",
+      "rc": 0,
+      "output": "aucun appel à .admin., getUserById, updateUserById, deleteUser, listFactors ni deleteFactor dans 2 fichier(s) de app/web/src"
+    },
+    {
+      "POLICY": "DB-migrations-additives",
+      "REF": "SPEC-004.18 | SPEC-004.12 | ADR-011 | CA-002-33",
+      "QUAND": "always",
+      "file": "29-db-migrations-additives.sh",
+      "status": "violee",
+      "rc": 1,
+      "output": "migrations non additives ou non vérifiables : 001–005 : git absent du conteneur runner, comparaison à dae9044 non exécutée"
+    },
+    {
+      "POLICY": "FRONT-messages-tour3",
+      "REF": "SPEC-005.7 | SPEC-005.33 | SPEC-005.40 | SPEC-005.60 | SPEC-005.62 | SPEC-005.63 | CA-002-27 | CA-002-28 | CA-002-34 | CA-002-38 | CA-002-39",
+      "QUAND": "always",
+      "file": "30-front-messages-tour3.sh",
+      "status": "respectee",
+      "rc": 0,
+      "output": "M-1 à M-6 exacts (gabarits), 4 libellés présents, ancien texte absent, aucun confirm( ni alert(, aucun innerHTML"
+    },
+    {
+      "POLICY": "FRONT-barre-fixe",
+      "REF": "SPEC-005.6 | CA-002-37 (proposé, tour 3)",
+      "QUAND": "always",
+      "file": "31-front-barre-fixe.sh",
+      "status": "respectee",
+      "rc": 0,
+      "output": "barre .entete sticky en haut (top: 0), scroll-padding-top 5.5rem sur html, lien d'évitement au-dessus (z-index 30 > 20)"
+    },
+    {
+      "POLICY": "STACK-tags-par-pile",
+      "REF": "SPEC-004.16 | ADR-008 | CA-002-2 | CA-002-36",
+      "QUAND": "always",
+      "file": "32-stack-tags-par-pile.sh",
+      "status": "respectee",
+      "rc": 0,
+      "output": "images construites : devenv/app:dev, devenv/client:dev, devenv/runner:dev (dev) ; surcouche : devenv/app:service (service) ; aucune collision"
+    },
+    {
+      "POLICY": "STACK-auth-debit",
+      "REF": "SPEC-001.14 | ADR-006 §1 | CA-002-6 | CA-002-7 | CA-002-33",
+      "QUAND": "always",
+      "file": "33-stack-auth-debit.sh",
+      "status": "respectee",
+      "rc": 0,
+      "output": "GOTRUE_RATE_LIMIT_HEADER absent ; EMAIL_SENT, TOKEN_REFRESH, VERIFY, OTP >= 1000 ; aucun limit_req ni limit_conn sous app/nginx/"
+    },
+    {
+      "POLICY": "STACK-points-accroche",
+      "REF": "SPEC-004.11 | SPEC-004.12 | SPEC-004.13 | SPEC-004.14 | ADR-006 §3 | CA-002-1 | CA-002-2",
+      "QUAND": "always",
+      "file": "34-stack-points-accroche.sh",
+      "status": "respectee",
+      "rc": 0,
+      "output": "migrate et seed conformes (profil deploy, images, montages, env_file longue required: false, sans port ni restart) ; healthchecks db, auth, app ; volume db-data"
     }
   ],
   "synthese": {
-    "respectee": 17,
-    "violee": 3,
+    "respectee": 28,
+    "violee": 2,
     "non_applicable": 0
   }
 }
