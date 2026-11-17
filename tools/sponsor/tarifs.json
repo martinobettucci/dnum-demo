@@ -1,0 +1,7 @@
+{
+  "_source": "Tarifs API Anthropic publics en $/MTok, relevés le 2026-11-17. cache_write = 1.25 x input (cache 5 min) ; à vérifier avant tout usage contractuel. Sous abonnement Claude, le coût réel diffère : c'est un équivalent API.",
+  "claude-opus-5-5":   {"input": 4.00, "output": 20.00, "cache_write": 5.00,  "cache_read": 0.20},
+  "claude-sonnet-5-5": {"input": 2.00, "output": 10.00, "cache_write": 2.50,  "cache_read": 0.10},
+  "claude-haiku-5-5":  {"input": 0.10, "output": 0.50,  "cache_write": 0.125, "cache_read": 0.01},
+  "claude-fable-5-2":  {"input": 8.00, "output": 40.00, "cache_write": 10.00, "cache_read": 0.20}
+}

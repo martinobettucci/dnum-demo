@@ -1,0 +1,5 @@
+.devenv/
+.claude/settings.local.json
+iterations/*/client/*.png
+__pycache__/
+.pytest_cache/

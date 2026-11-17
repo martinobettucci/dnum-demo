@@ -1,0 +1,39 @@
+# Pile de développement JETABLE (volumes compris) : ./dev reset la détruit entièrement.
+# Seul le responsable-applicatif la démarre / l'arrête (./dev deploy | teardown | reset).
+name: devenv
+services:
+  app:
+    build: ../app
+    image: devenv/app:dev
+    ports: ["127.0.0.1:${APP_PORT:-8080}:80"]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+
+  # Outillage de vérification (policies + tests automatiques), jamais démarré en service.
+  runner:
+    build: ../tools/runner
+    image: devenv/runner:dev
+    profiles: ["tools"]
+    environment:
+      APP_URL: http://app
+    working_dir: /workspace
+    volumes:
+      - ..:/workspace:ro
+      - ../iterations:/workspace/iterations
+
+  # Navigateur du client : piloté uniquement au clavier et à la souris.
+  client:
+    build: ../tools/client
+    image: devenv/client:dev
+    profiles: ["client"]
+    init: true
+    ipc: host
+    environment:
+      APP_URL: http://app
+    volumes:
+      - ../iterations:/iterations
+    depends_on:
+      app: { condition: service_healthy }

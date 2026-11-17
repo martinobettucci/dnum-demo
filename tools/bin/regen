@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Régénère un raccourci tools/bin/<cmd> pour chaque commande du registre.
+cd "$(dirname "$0")"
+for c in $(grep -vE '^\s*(#|$)' ../toolbox/registry.conf | awk '{print $1}'); do
+  printf '#!/usr/bin/env bash\nexec "$(dirname "$0")/_dockerized" %s "$@"\n' "$c" > "$c"; chmod +x "$c"
+done
+ls

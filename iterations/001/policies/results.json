@@ -1,0 +1,57 @@
+{
+  "iteration": "001",
+  "date": "2026-11-17T11:31:23",
+  "pile_demarree": true,
+  "results": [
+    {
+      "POLICY": "ENV-images-epinglees",
+      "REF": "ENV (reproductibilité)",
+      "QUAND": "always",
+      "file": "00-env-images-epinglees.sh",
+      "status": "respectee",
+      "rc": 0,
+      "output": "toutes les images FROM sont épinglées"
+    },
+    {
+      "POLICY": "ENV-dependances-epinglees",
+      "REF": "ENV (reproductibilité)",
+      "QUAND": "always",
+      "file": "01-env-dependances-epinglees.sh",
+      "status": "respectee",
+      "rc": 0,
+      "output": "dépendances Python épinglées (==)"
+    },
+    {
+      "POLICY": "ENV-pas-de-secret",
+      "REF": "ENV (sécurité)",
+      "QUAND": "always",
+      "file": "02-env-pas-de-secret.sh",
+      "status": "respectee",
+      "rc": 0,
+      "output": "aucun secret détecté"
+    },
+    {
+      "POLICY": "ENV-toolbox-epinglee",
+      "REF": "ENV (reproductibilité — commandes absentes conteneurisées)",
+      "QUAND": "always",
+      "file": "03-env-toolbox-epinglee.sh",
+      "status": "respectee",
+      "rc": 0,
+      "output": "toutes les images de la toolbox sont épinglées"
+    },
+    {
+      "POLICY": "APP-repond",
+      "REF": "ENV (mise en service)",
+      "QUAND": "deployed",
+      "file": "10-app-repond.sh",
+      "status": "respectee",
+      "rc": 0,
+      "output": "GET / → 200"
+    }
+  ],
+  "synthese": {
+    "respectee": 5,
+    "violee": 0,
+    "non_applicable": 0
+  }
+}

@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Exécute une commande absente de l'hôte dans son conteneur (registre : tools/toolbox/registry.conf).
+# Image publique épinglée, ou image maison construite une fois puis réutilisée (devenv/tool-<nom>:dev).
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+name="$1"; shift
+line=$(grep -E "^${name}[[:space:]]" "$ROOT/tools/toolbox/registry.conf" || true)
+[[ -n "$line" ]] || { echo "commande '$name' absente du registre tools/toolbox/registry.conf : l'y ajouter (image épinglée ou build:<dossier>)" >&2; exit 127; }
+img=$(awk '{print $2}' <<<"$line")
+ep=$(awk '{print $3}' <<<"$line"); entry=(--entrypoint "${ep:-$name}")
+if [[ $img == build:* ]]; then
+  dir="${img#build:}"; img="devenv/tool-$dir:dev"; entry=()
+  docker image inspect "$img" >/dev/null 2>&1 || docker build -q -t "$img" "$ROOT/tools/toolbox/$dir" >/dev/null
+fi
+tty=(); [[ -t 0 && -t 1 ]] && tty=(-it) || tty=(-i)
+exec docker run --rm "${tty[@]}" -v "$PWD:$PWD" -w "$PWD" "${entry[@]}" "$img" "$@"

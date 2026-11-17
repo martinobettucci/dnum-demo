@@ -1,0 +1,20 @@
+{
+  "iteration": "001",
+  "debut": "2026-11-17T11:19:00+00:00",
+  "fin": null,
+  "duree_min": 1.9,
+  "par_modele": [
+    {
+      "modele": "claude-opus-5-5",
+      "requetes": 9,
+      "sous_agents": 0,
+      "input": 18,
+      "output": 4560,
+      "cache_write": 9100,
+      "cache_read": 1471610,
+      "cout_usd": 0.4311
+    }
+  ],
+  "cout_total_usd": 0.4311,
+  "tarifs": "Tarifs API Anthropic publics en $/MTok, relevés le 2026-11-17. cache_write = 1.25 x input (cache 5 min) ; à vérifier avant tout usage contractuel. Sous abonnement Claude, le coût réel diffère : c'est un équivalent API."
+}

@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Point d'entrée unique de l'environnement de développement reproductible.
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")" && pwd)"; cd "$ROOT"
+DC=(docker compose -f stack/compose.yml)
+cur() { [[ -f iterations/CURRENT ]] && cat iterations/CURRENT || { echo "aucune itération : ./dev iteration-new" >&2; exit 1; }; }
+now() { date -u +%Y-%m-%dT%H:%M:%S+00:00; }
+
+cmd="${1:-help}"; shift || true
+case "$cmd" in
+  help) cat <<'H'
+./dev bootstrap          vérifie les prérequis et construit toutes les images (idempotent)
+./dev doctor             vérifie les prérequis uniquement
+./dev build              construit les images de la pile et de l'outillage
+./dev iteration-new      ouvre l'itération suivante (iterations/NNN, iterations/CURRENT)
+./dev iteration-close    clôt l'itération courante
+./dev policies           exécute policies/checks → iterations/NNN/policies/results.json
+./dev test               exécute les tests automatiques → iterations/NNN/tests/
+./dev cout               rapport de coût de l'itération courante → iterations/NNN/cout.json
+./dev status | logs [s]  état / journaux de la pile
+--- réservé au responsable-applicatif ---
+./dev deploy             mise en service (build, démarrage, santé, navigateur du client)
+./dev teardown           arrêt de la pile
+./dev reset              destruction de la pile ET de ses volumes
+H
+  ;;
+  doctor)
+    ok=1
+    for b in docker git python3 claude; do command -v "$b" >/dev/null && echo "✓ $b" || { echo "✗ $b manquant"; ok=0; }; done
+    docker compose version >/dev/null 2>&1 && echo "✓ docker compose" || { echo "✗ docker compose"; ok=0; }
+    docker info >/dev/null 2>&1 && echo "✓ démon docker joignable" || { echo "✗ démon docker injoignable"; ok=0; }
+    [[ $ok == 1 ]] ;;
+  build) "${DC[@]}" --profile tools --profile client build "$@" ;;
+  bootstrap)
+    "$0" doctor
+    chmod +x dev tools/client/client.sh tools/guards/guard.py
+    mkdir -p .devenv iterations
+    "$0" build
+    echo "Environnement prêt. Lancer : cd $ROOT && claude   (le thread principal est le chef de projet)" ;;
+  iteration-new)
+    last=$( (ls -d iterations/[0-9][0-9][0-9] 2>/dev/null || true) | sort | tail -1 | xargs -r basename)
+    n=$(printf '%03d' $((10#${last:-0} + 1))); d="iterations/$n"
+    mkdir -p "$d"/{policies,tests,client}; now > "$d/.started"; echo "$n" > iterations/CURRENT
+    printf '# Itération %s — expression du besoin\n\n(rédigé par le chef de projet)\n' "$n" > "$d/besoin.md"
+    echo "itération $n ouverte : $d" ;;
+  iteration-close) d="iterations/$(cur)"; now > "$d/.ended"; echo "itération $(cur) close" ;;
+  policies) cur >/dev/null; "${DC[@]}" --profile tools run --rm -T runner run-policies ;;
+  test)
+    it=$(cur)
+    "${DC[@]}" --profile tools run --rm -T runner \
+      pytest -q -p no:cacheprovider tests --junitxml="iterations/$it/tests/junit.xml" "$@" \
+      | tee "iterations/$it/tests/resultat.txt" ;;
+  cout)
+    it=$(cur)
+    docker run --rm -v "$HOME/.claude/projects:/projects:ro" -v "$ROOT:/w" -w /w python:3.13.1-slim \
+      python3 tools/sponsor/cout.py "/projects/${DEVENV_COST_PROJECT:-$(echo "$ROOT" | sed 's#[/.]#-#g')}" "iterations/$it" tools/sponsor/tarifs.json ;;
+  status) "${DC[@]}" --profile client ps ;;
+  logs) "${DC[@]}" --profile client logs --tail=200 "$@" ;;
+  deploy)
+    it=$(cur); t0=$(date +%s)
+    "${DC[@]}" --profile client up -d --build --wait app
+    "${DC[@]}" --profile client up -d client
+    echo "{\"date\":\"$(now)\",\"iteration\":\"$it\",\"commit\":\"$(git rev-parse --short HEAD 2>/dev/null || echo non-commite)\",\"duree_s\":$(( $(date +%s)-t0 ))}" >> .devenv/deploy.log
+    echo "Mise en service OK en $(( $(date +%s)-t0 )) s — http://127.0.0.1:${APP_PORT:-8080}/" ;;
+  teardown) "${DC[@]}" --profile client --profile tools down --remove-orphans ;;
+  reset) "${DC[@]}" --profile client --profile tools down -v --remove-orphans ;;
+  *) echo "commande inconnue : $cmd" >&2; "$0" help; exit 1 ;;
+esac
