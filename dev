@@ -95,7 +95,7 @@ H
   logs) dc --profile client logs --tail=200 "$@" ;;
   deploy)
     it=$(cur); t0=$(date +%s); mkdir -p .devenv
-    python3 tools/deploy/secrets.py "$SECRETS"                       # SPEC-003.1 (idempotent)
+    python3 tools/deploy/gen_secrets.py "$SECRETS"                       # SPEC-003.1 (idempotent)
     [[ $PILE == service && ! -f stack/compose.service.yml ]] && \
       echo "avertissement : stack/compose.service.yml absent (surcouche service, ADR-004)" >&2
     if a_service db; then

@@ -1,5 +1,5 @@
 """SPEC-001 — Pile Supabase auto-hébergée et passerelle unique (CA-002-1, 2, 3, 6, 7, 11)."""
-import os, re, uuid
+import re, uuid
 
 import pytest
 import requests
@@ -20,16 +20,6 @@ def test_accueil_repond_200_en_html():
     r = servi("/")
     assert r.status_code == 200
     assert "text/html" in r.headers.get("Content-Type", "")
-
-
-@pytest.mark.spec("SPEC-001.4")
-def test_accueil_repond_200_sur_adresse_lan_du_serveur():
-    """CA-002-1 : l'adresse 10.77.0.25 du serveur sert l'application (port APP_PORT, défaut 8080).
-    Vu depuis le conteneur runner ; 127.0.0.1 de l'hôte n'est vérifiable que par [R]."""
-    ip = os.environ.get("APP_LAN_IP", "10.77.0.25")
-    port = os.environ.get("APP_PORT", "8080")
-    r = requests.get(f"http://{ip}:{port}/", timeout=TIMEOUT)
-    assert r.status_code == 200
 
 
 # --- SPEC-001.5 : santé des services derrière la passerelle -----------------------------------

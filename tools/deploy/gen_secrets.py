@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Génération idempotente des secrets d'une pile (ADR-003, SPEC-003.1/.2).
 
-Usage : python3 tools/deploy/secrets.py <fichier.env>
+Usage : python3 tools/deploy/gen_secrets.py <fichier.env>
 - crée le répertoire (0700) et le fichier (0600) s'ils sont absents ;
 - ne génère QUE les clés absentes ; une valeur existante n'est jamais réécrite ;
 - ANON_KEY / SERVICE_ROLE_KEY : JWT HS256 signés par JWT_SECRET ;
@@ -55,7 +55,7 @@ def lire(path):
 
 def main():
     if len(sys.argv) != 2:
-        sys.exit("usage : secrets.py <fichier.env>")
+        sys.exit("usage : gen_secrets.py <fichier.env>")
     path = os.path.abspath(sys.argv[1])
     d = os.path.dirname(path)
     os.makedirs(d, mode=0o700, exist_ok=True)

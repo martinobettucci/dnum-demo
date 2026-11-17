@@ -1,4 +1,4 @@
-# Itération 002 — Périmètre (product owner, 2026-11-17, tour 1 — mis à jour après arbitrage de l'architecte)
+# Itération 002 — Périmètre (product owner, 2026-11-17, tour 2 — règle [R] consignée, recette client préparée)
 
 ## 1. Objectif de la boucle
 
@@ -17,6 +17,8 @@ propositions d'entraide.
 | D3 | **US-14 (persistance) passe de SHOULD à MUST**, prérequis de la pile `service` (données persistantes). | Sans elle, US-17 n'a pas de sens. |
 | D4 | **CA-002-4 corrigé** : mot de passe admin généré de **≥ 20 caractères** (et non 16), aligné sur SPEC-003.1. | Incohérence relevée entre perimetre et spec ; 20 satisfait aussi l'ancien seuil. |
 | D5 | **SPEC-003.9 passée en [T] : cohérente** avec CA-002-4, CA-002-8 et CA-002-24 (§ 2.2). | Vérification de cohérence. |
+| D6 | **US-14 et US-17 restent en MUST**, confirmé au tour 2 (décision utilisateur, via le chef de projet). | Prérequis de la pile `service`. |
+| D7 | **CA-002-33 passe de [T] à [T] + [R]** : le redéploiement sans `reset` est une opération réservée au responsable applicatif (SPEC-004.6) ; un test ne peut pas la déclencher. Aligné sur SPEC-006 § 2. | Vérifiabilité. |
 
 ### 2.1 Dérogation CA-002-1 : validation et repli
 
@@ -44,6 +46,38 @@ Le repli ne change pas le périmètre fonctionnel de la boucle.
   l'activation. Aucun compte n'est pré-créé.
 - Compatible avec CA-002-24 (les comptes non activés n'apparaissent pas au tableau de bord).
 - Le marqueur `spec("SPEC-003.9")` relève du testeur (`tests/test_003_admin.py`), comme convenu avec l'architecte.
+
+### 2.3 Règle des critères [R] (tour 2)
+
+**Liste exhaustive des [R] de l'itération 002** (seuls critères dont la vérification exige l'hôte) :
+
+| CA | Vérification [R] | Preuve à consigner |
+|---|---|---|
+| CA-002-1 | (a) `curl -sI http://10.77.0.25:8080/` → 200 ; (b) `ss -ltn` : `10.77.0.25:8080` seul, sans `127.0.0.1:8080` ni `0.0.0.0:8080` ; (c) la sortie de `./dev deploy` n'affiche aucune URL `127.0.0.1` | sorties brutes de `curl`, `ss -ltn` et `./dev deploy` |
+| CA-002-33 | `./dev deploy` **sans** `./dev reset` entre l'écriture de données et leur relecture (le [T] lit avant et après) | horodatages des deux `deploy` |
+| CA-002-36 | (a) `docker compose ls` et `docker volume ls` identiques avant/après `./dev deploy service` pour le projet `devenv` ; (b) `curl -sI http://10.77.0.25:8081/` → 200 ; (c) `./dev reset service` sans `--confirmer-destruction` refusé, rien détruit | sorties brutes avant/après |
+
+**Pourquoi ces critères ne peuvent être ni [C] ni [T]** :
+- *Pas [C]* : le client n'agit qu'au clavier et à la souris et ne voit que ses captures d'écran (garde-fou technique).
+  Une page affichée dans son navigateur ne révèle ni l'adresse d'écoute, ni les conteneurs, ni la sortie de `./dev`.
+- *Pas [T]* : le runner est un conteneur du réseau de la pile dev (`APP_URL=http://app`). Il ne doit pas joindre
+  `10.77.0.25` (ADR-007 § 4, SPEC-006 § 1), et un succès depuis l'intérieur du réseau ne prouverait pas l'accessibilité
+  LAN, objet même de la dérogation D1. `ss` et `docker compose ls` interrogent l'hôte et le daemon Docker, hors de portée
+  d'un conteneur de test ; le socket Docker n'est pas ouvert au runner. Enfin `deploy`, `reset` et `backup`/`restore` sont
+  réservés au responsable applicatif (SPEC-004.6, `tools/guards/guard.py`) : aucun test ne peut les déclencher.
+
+**Règle** :
+1. Un [R] est exécuté **uniquement** par le responsable applicatif, après le `deploy` du tour, et consigné dans
+   `iterations/002/mise-en-service.md` (commande, sortie brute, horodatage, aucun secret).
+2. Un [R] ne remplace jamais un [C] ni un [T] : un critère n'est acquis que si ses parties [T]/[C] **et** [R] sont vertes.
+3. Un [R] non exécuté est « **non confirmé** », jamais « réussi ». Il bloque la clôture de l'itération tant qu'il n'est pas consigné.
+
+**Statut au tour 2 : non confirmé.** Le product owner n'a pas d'outil d'exécution dans sa session : `ss -ltn`,
+`docker compose ls` et `curl` n'ont pas été lancés par lui. Dernière observation consignée (tour 1,
+`mise-en-service.md` §1 et §5, **périmée**) : pile dev publiée sur `127.0.0.1:8080` seule, `10.77.0.25` non publié,
+bail DHCP `dynamic`. À reconfirmer après le `deploy` du tour 2.
+
+**Point ouvert** : CA-002-1 (c) est statique (contrôle du texte de `./dev`) et pourrait passer en [P]. Décision du chef de projet.
 
 ## 3. User stories retenues (priorisées, MoSCoW)
 
@@ -205,7 +239,7 @@ que l'hôte seul peut faire : elles ne sont pas des critères fonctionnels et ne
 - **CA-002-32** [C] — Le tableau de bord affiche le nombre de propositions reçues en attente pour le membre connecté.
 
 ### US-14 — Persistance (Must)
-- **CA-002-33** [T] — Des données créées (compte activé, tâche, temps logué) sont toujours présentes après un
+- **CA-002-33** [T] + [R] — Des données créées (compte activé, tâche, temps logué) sont toujours présentes après un
   `./dev deploy` effectué sans `./dev reset` ; le mot de passe admin n'est pas régénéré (SPEC-004.3, SPEC-003.5).
 
 ### US-15 — Désactivation (Could)

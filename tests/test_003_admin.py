@@ -98,6 +98,19 @@ def test_un_seul_administrateur(admin):
     assert [x["id"] for x in r.json() if x["role"] == "admin"] == [admin.id]
 
 
+# --- SPEC-003.9 (seed : aucun compte autre que ADMIN_EMAIL hors comptes de test) -----------------
+@pytest.mark.spec("SPEC-003.9")
+def test_seul_admin_email_hors_comptes_de_test(admin, secrets_env):
+    """Hors comptes de test (e-mail en @test.invalid, SPEC-006 §1), la liste admin ne contient que
+    ADMIN_EMAIL. Ne dépend pas de l'ordre des tests : les comptes de test sont filtrés."""
+    r = admin.rpc("admin_list_accounts")
+    assert r.status_code == 200, f"admin_list_accounts → {r.status_code} {r.text[:300]}"
+    admin_email = secrets_env["ADMIN_EMAIL"].lower()
+    hors_test = sorted({(x.get("email") or "").lower() for x in r.json()
+                        if not (x.get("email") or "").lower().endswith("@test.invalid")})
+    assert hors_test == [admin_email], f"comptes hors @test.invalid : {len(hors_test)} (attendu : ADMIN_EMAIL seul)"
+
+
 # --- SPEC-003.6 (part [T] : aucun secret dans le journal de déploiement) ------------------------
 @pytest.mark.spec("SPEC-003.6")
 def test_deploy_log_sans_secret(secrets_env):

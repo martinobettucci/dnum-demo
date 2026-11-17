@@ -50,7 +50,7 @@ Trois frictions sont apparues avant le développement :
 - Les chemins et noms préparés par `action` deviennent la **référence** (SPEC-004.11 à SPEC-004.15) :
   - service `migrate` (`supabase/postgres:15.8.1.060`, `bash /ops/db.sh`), avec `tools/deploy` monté sur `/ops:ro` et `app/db/migrations` sur `/migrations:ro` ;
   - service `seed` (`python:3.13.1-slim`, `python3 /ops/seed.py`) ;
-  - profil `deploy`, `env_file: ${DEVENV_SECRETS}` ;
+  - profil `deploy`, `env_file` en forme longue `- path: ${DEVENV_SECRETS}` avec `required: false` (tour 2, SPEC-004.11 : `teardown` et `reset` sans fichier de secrets) ;
   - séquence secrets → `db` + `auth` → migrations → `rest` + `app` → seed → promote-admin → client (dev).
 - Les migrations s'exécutent **après** `auth`, pour que le trigger `on_auth_user_created` puisse viser `auth.users`.
   Une transaction par fichier : aucune instruction de transaction de premier niveau dans les fichiers.

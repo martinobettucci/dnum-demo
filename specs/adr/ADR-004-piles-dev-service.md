@@ -6,6 +6,9 @@ Statut : accepté (itération 002) — couvre CA-002-1, CA-002-33, CA-002-36 (Co
 > pas de `127.0.0.1`). Les images locales portent un tag par pile (`devenv/app:dev`, `devenv/app:service`, ADR-008).
 > La pile `service` est **retenue pour cette itération** par décision du chef de projet (statut Could levé dans
 > SPEC-004 ; `perimetre.md` à mettre à jour par le product-owner).
+>
+> **Amendement (tour 2, 2026-11-17, ADR-009)** : la politique `restart: unless-stopped` de la surcouche `service`
+> porte sur **db, auth, rest et app** (et non plus sur `app` seul). La pile `dev` n'en a aucune.
 
 ## Contexte
 - ADR-000 : la pile est jetable volumes compris. Le besoin ajoute une pile `service` exposée,

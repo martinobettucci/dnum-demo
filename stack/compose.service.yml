@@ -1,8 +1,15 @@
-# Surcouche de la pile service (projet dnum-service, SPEC-004.7, ADR-004, ADR-008), ajoutée par ./dev.
-# Elle ne fait que : restart unless-stopped sur app, et image devenv/app:service.
+# Surcouche de la pile service (projet dnum-service, SPEC-004.7, ADR-004, ADR-008, ADR-009), ajoutée par ./dev.
+# Elle ne fait que : restart unless-stopped sur db, auth, rest et app (ADR-009), et image devenv/app:service (SPEC-004.16).
+# migrate et seed (one-shot) n'ont AUCUNE politique restart. runner et client ne sont pas démarrés en service.
 # Elle ne redéfinit PAS ports : la publication ${APP_LAN_IP}:${APP_PORT}:80 est héritée de compose.yml
 # (les listes ports sont fusionnées par compose : une redéfinition créerait une seconde publication, ADR-007 §2).
 services:
+  db:
+    restart: unless-stopped
+  auth:
+    restart: unless-stopped
+  rest:
+    restart: unless-stopped
   app:
     image: devenv/app:service
     restart: unless-stopped

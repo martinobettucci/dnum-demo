@@ -4,6 +4,10 @@ Couvre tous les CA-002-1 à CA-002-36. Chaque CA a au moins un mécanisme de vé
 
 > **Amendements tour 1 complément (2026-11-17)** : §1 (le runner ne joint que `http://app`), §2 (ligne CA-002-1),
 > §3 (policies 4 et 11), §5 (marqueurs et retrait pour le testeur). Cadre : ADR-007, ADR-008.
+>
+> **Amendements tour 2 (2026-11-17)** : §2 (CA-002-1, CA-002-2, CA-002-36) ; §3 policy 9 (`env_file` longue,
+> `required: false`) ; §3 policies 12 à 14 nouvelles (ADR-009, ADR-010, SPEC-004.17). Les policies sont à écrire
+> par l'agent `policy` avant l'action (boucle AOPR).
 
 ## 1. Conditions d'exécution des tests automatiques (`testeur`)
 - Exécution : `./dev test` (conteneur `runner`, réseau de la pile dev). Base : `APP_URL=http://app`.
@@ -30,8 +34,8 @@ Couvre tous les CA-002-1 à CA-002-36. Chaque CA a au moins un mécanisme de vé
 
 | CA | Specs | [T] testeur | [C] client | [P] / [R] |
 |---|---|---|---|---|
-| CA-002-1 | 001.1/3/4/5/13, 004.1/2/4/7/10 | `GET $APP_URL/` 200 ; santé auth/rest | — | [P] publication LAN seule (001.3) ; [R] `curl -sI http://10.77.0.25:8080/` (dev) et `:8081` (service), `mise-en-service.md`. **Dérogation** : `127.0.0.1` n'est plus vérifié (ADR-007). |
-| CA-002-2 | 001.2/10, 003.2/3/6, 004.5, 004.16 | signature des clés ; `service_role` absente des fichiers servis | — | [P] images épinglées (FROM + `image:`), tags par pile (004.16), versions npm exactes, secrets absents des fichiers suivis |
+| CA-002-1 | 001.1/3/4/5/13, 004.1/2/4/7/10/11/17 | `GET $APP_URL/` 200 ; santé auth/rest | — | [P] publication LAN seule (001.3) ; [R] `curl -sI http://10.77.0.25:8080/` (dev) et `:8081` (service), `mise-en-service.md`. **Dérogation** : `127.0.0.1` n'est plus vérifié (ADR-007). |
+| CA-002-2 | 001.2/10/15, 003.2/3/6, 004.5, 004.16 | signature des clés ; `service_role` absente des fichiers servis | — | [P] images épinglées (FROM + `image:`), tags par pile (004.16), versions npm exactes, secrets absents des fichiers suivis |
 | CA-002-3 | 001.6/7/8/9/10 | relais `/auth/v1`, `/rest/v1` ; 403 `/auth/v1/admin` ; CSP ; aucune URL d'autre port dans les fichiers servis | — (implicite : tout marche sur le seul port) | [P] seul `app` publie un port |
 | CA-002-4 | 003.1/4/5/7/9 | connexion admin, `my_status`, unicité du compte, longueur du mot de passe, seul `ADMIN_EMAIL` hors `@test.invalid` | — | [R] transmission hors fichier |
 | CA-002-5 | 003.8, 005.14/61 | — | connexion admin ⇒ tableau de bord + « Administration » ; membre ⇒ absente | — |
@@ -65,7 +69,7 @@ Couvre tous les CA-002-1 à CA-002-36. Chaque CA a au moins un mécanisme de vé
 | CA-002-33 | 004.3, 003.5 | écrire → redéploiement (R) → relire ; mot de passe admin inchangé | — | [R] `./dev deploy` sans reset entre les deux passes |
 | CA-002-34 (Could) | 002.20, 005.60 | désactivation, auto-désactivation refusée | « Désactiver » ⇒ écran d'attente | — |
 | CA-002-35 (Could) | 002.21, 005.21 | filtre `due_date` | filtre « Aujourd'hui » | — |
-| CA-002-36 | 004.7/8/9/16 | backup → reset → restore → relecture (`DEVENV_PILE=service`) | — | [R] isolation des piles (`docker compose ls`, `docker volume ls`, tags distincts) |
+| CA-002-36 | 004.7/8/9/16 | backup → reset → restore → relecture (`DEVENV_PILE=service`) | — | [P] `STACK-restart-service` (ADR-009) ; [R] isolation des piles (`docker compose ls`, `docker volume ls`, tags distincts) ; [R] `docker inspect` : `unless-stopped` sur db, auth, rest, app |
 
 ## 3. Policies attendues (à écrire par l'agent `policy`, avant l'action)
 1. Images épinglées : `FROM` **et** `image:` de `stack/*.yml` (tag exact, pas `latest`).
@@ -76,9 +80,12 @@ Couvre tous les CA-002-1 à CA-002-36. Chaque CA a au moins un mécanisme de vé
 6. Garde-fou : `./dev backup|restore` refusés hors `responsable-applicatif` (SPEC-004.6).
 7. `FRONT-meme-origine` (n° 15), à préciser selon SPEC-001.8. Règle stricte (`localhost`, `:9999`, `:3000`, `:5432`, `http://auth`, `http://rest`) sur `/`, `/app.js`, `/config.js` et `/style.css`. Règle bibliothèque sur `/vendor/supabase.js` : 200, présence de `2.47.10`, absence de `:3000`, `:5432`, `http://auth`, `http://rest`, de JWT et de valeurs secrètes ; `localhost` et `:9999` tolérés. Le test `test_001_pile.py` (SPEC-001.8) suit la même partition.
 8. `STACK-auth-debit` (statique, SPEC-001.14) : `GOTRUE_RATE_LIMIT_HEADER` absent ; `GOTRUE_RATE_LIMIT_EMAIL_SENT`, `_TOKEN_REFRESH`, `_VERIFY` et `_OTP` ≥ 1000 dans le service `auth` ; aucun `limit_req` ni `limit_conn` sous `app/nginx/`.
-9. `STACK-points-accroche` (statique, SPEC-004.11, 004.13 et 004.14) : services `migrate` et `seed` (profil, image, montages, `env_file: ${DEVENV_SECRETS}`), healthchecks de `db`, `auth` et `app`, volume `db-data`. Vérification par `docker compose config` ou par analyse YAML de `stack/compose.yml`.
+9. `STACK-points-accroche` (statique, SPEC-004.11, 004.13 et 004.14) : services `migrate` et `seed` (profil, image, montages, `env_file` en forme longue `- path: ${DEVENV_SECRETS}` avec `required: false`), healthchecks de `db`, `auth` et `app`, volume `db-data`. Vérification par `docker compose config` ou par analyse YAML de `stack/compose.yml`.
 10. `DB-migrations-versionnees` (n° 22) étendue selon SPEC-004.12 : nommage `NNN_[a-z0-9_]+.sql`, versions uniques, aucune instruction de transaction de premier niveau, aucun `CONCURRENTLY`.
 11. `STACK-tags-par-pile` (statique, SPEC-004.16, ADR-008) : chaque `image:` construit de `stack/compose.yml` porte le tag `:dev` ; celui de `stack/compose.service.yml` porte `:service` ; aucune paire `nom:tag` commune aux deux fichiers.
+12. `STACK-restart-service` (statique, SPEC-004.7, ADR-009) : `docker compose -f stack/compose.yml -f stack/compose.service.yml config` ; `restart` = `unless-stopped` pour `db`, `auth`, `rest`, `app` ; aucune politique pour `migrate`, `seed`, `runner`, `client` ; aucune politique `restart` dans la configuration de la pile `dev` (`stack/compose.yml` seul).
+13. `FRONT-audit-npm` (SPEC-001.15, ADR-010) : `npm audit --json` sur `app/web/package-lock.json` dans l'image `node:22.12.0-alpine` (conteneur jetable, pas d'outil sur l'hôte) ; échec si un identifiant d'avis n'est pas listé dans ADR-010, si un avis est de sévérité haute ou critique, ou si la commande n'a pu se connecter au registre (statut « non exécutée », jamais « réussie »).
+14. `DEV-sortie-url` (statique, SPEC-004.17) : `grep -nE '127\.0\.0\.1|localhost|0\.0\.0\.0' dev` ne retourne rien ; `dev` exporte `APP_LAN_IP` sur la même ligne que `APP_PORT`.
 
 ## 4. Ordre de recette client conseillé
 Connexion admin (CA-5) → inscription A et B + erreurs (CA-6, 7) → connexion A non activé (CA-10)

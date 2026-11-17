@@ -1,73 +1,59 @@
 Mise en service assurée exclusivement par le responsable applicatif. Aucun autre agent ne démarre, n'arrête ni ne détruit la pile : adressez vos demandes au chef de projet.
 
-# Itération 002 — tour 1 : préparation de la mise en service (AUCUN déploiement)
+# Itération 002 — tour 2 : mise en service DEV (SUCCÈS)
 
-- Statut : **non déployé**. Ce document est un plan de préparation et un relevé d'état, pas un compte rendu de mise en service.
-- Date : 2026-11-17.
-- Version du dépôt : commit `8a451c2`, arbre de travail propre pour `stack/`, `dev`, `app/`, `policies/` (non commité : uniquement les journaux d'agents de l'itération 002).
-- Pile dev existante : projet `devenv`, issue de l'itération 001, toujours en marche (`devenv-app-1` healthy, port 127.0.0.1:8080 ; `devenv-client-1` up). Non touchée ce tour.
-- Pile service : non déployée ; `stack/compose.service.yml` absent.
-- Secrets : `.devenv/secrets/` absent (aucun fichier de secrets créé ce tour).
-- Sauvegardes : `.devenv/backups/` absent.
+- Statut : **succès**. `./dev deploy` (pile `dev` uniquement, sans `reset`) rend la main avec le code 0.
+- Date : 2026-11-17, déploiement vers 12:29 — 12:30 UTC.
+- Pile : `dev` uniquement. Pile `service` **non déployée** (conformément à la consigne).
+- Version déployée : commit `dfbc020` (itération 002 tour 1) + arbre de travail non commité. Correctif appliqué : `tools/deploy/secrets.py` renommé en `tools/deploy/gen_secrets.py` (non commité, `D` + `??` dans git) ; `dev` ligne 98 appelle `gen_secrets.py`.
+- Durée : **21 s** (build en cache, démarrage, migrations, seed, santé).
+- URL : **http://10.77.0.25:8080/** — répond (HTTP 200).
 
-## 1. Test de publication de port (SPEC-001.3, SPEC-001.4, ADR-004)
+## 1. Services (`./dev status`)
 
-Conteneur jetable (`python:3.13.1-slim`, `http.server`), supprimé après chaque essai. Hôte : `10.77.0.25` (bail DHCP, `dynamic`), Docker 29.10.0 en mode rootless, driver de port `builtin`.
+| Service | Image | État |
+|---|---|---|
+| app (nginx) | devenv/app:dev | Up, **healthy**, publié sur 10.77.0.25:8080 |
+| db | supabase/postgres:15.8.1.060 | Up, **healthy** |
+| auth (GoTrue) | supabase/gotrue:v2.170.0 | Up, **healthy** |
+| rest (PostgREST) | postgrest/postgrest:v12.2.8 | Up (pas de healthcheck déclaré ; joignable via nginx) |
+| client | devenv/client:dev | Up (driver de recette) |
+| migrate, seed | — | exécutés (conteneurs ponctuels) |
 
-| Essai | Résultat |
+## 2. Validation exécutée
+
+| Point | Résultat |
 |---|---|
-| Publication `127.0.0.1:18099` seule | OK (200 sur 127.0.0.1) |
-| Publication `10.77.0.25:18199` seule | OK (200 sur 10.77.0.25) |
-| Publication `127.0.0.1:P` **et** `10.77.0.25:P` (même port P) | **ÉCHEC** : `address already in use`, dans les deux ordres d'écriture |
-| `127.0.0.1:18500` et `10.77.0.25:18501` (ports différents) | OK (200 sur les deux) |
+| Migrations SQL | **OK** : 5 fichiers appliqués (`001_socle` à `005_rpc`), niveau 005. Ordre : migrations, puis seed, puis re-passage de migration (idempotent). |
+| GoTrue | **OK** : `/health` répond v2.170.0 ; `/auth/v1/health` via nginx = 200. |
+| PostgREST | **OK** : `/rest/v1/` via nginx = 200. |
+| nginx | **OK** : 10.77.0.25:8080 = 200. |
+| Seed admin | **OK** : compte admin créé dans `auth.users` ; profil `role=admin` actif. (1 compte, rôle admin confirmé.) |
+| Secrets `.devenv/secrets/dev.env` | **OK** : fichier `600` (spark-docker), répertoire `.devenv/secrets` `700`. Clés présentes : POSTGRES_PASSWORD, JWT_SECRET, ANON_KEY, SERVICE_ROLE_KEY, ADMIN_EMAIL, ADMIN_PASSWORD. Ignoré par git (`.gitignore` : `.devenv/`). |
+| RLS (psql dans `db`) | **OK** : RLS activée et forcée sur `tasks`, `profiles`, `time_entries`, `help_proposals`. 7 politiques (SELECT/INSERT/UPDATE pour `authenticated` uniquement). Rôle `anon` : `permission denied` sur les 4 tables. Rôle `authenticated` sans JWT : 0 ligne visible sur les 4 tables. |
 
-Conclusion : SPEC-001.3 et SPEC-001.4 (même `APP_PORT` sur les deux adresses) **ne peuvent pas être satisfaits** avec le driver actuel. Ce n'est pas un défaut de la pile applicative. Aucune configuration du daemon n'a été modifiée. Les options sont à trancher par l'architecte (ADR) : (a) ports distincts pour 127.0.0.1 et 10.77.0.25 (amendement de SPEC-001.3/.4) ; (b) publication sur 10.77.0.25 seul (la contrainte 127.0.0.1 tombe) ; (c) changement du driver de port du daemon rootless (`slirp4netns` ou `pasta`), qui touche l'hôte et demande une validation et un test dédié.
+Localhost : `http://127.0.0.1:8080/` ne répond pas (code 000) car la publication est liée à **10.77.0.25 uniquement**. C'est le comportement voulu pour la pile DEV sur le LAN, mais le message final de `./dev deploy` indique `http://127.0.0.1:8080/` : il faut le corriger (voir section 4).
 
-## 2. Relecture de `./dev deploy`, `backup`, `restore`
+## 3. Incidents et observations
 
-Constats bloquants, vérifiés dans le dépôt :
+Aucun échec bloquant pendant ce tour. Journal complet du déploiement : `/tmp/deploy-dev-002-t2.log` (secrets masqués).
 
-1. **`stack/compose.yml` ne définit ni `db`, ni `auth`, ni `rest`, ni `migrate`, ni `seed`.** SPEC-001.1 n'est pas satisfait. `./dev deploy` prend donc la branche « pas de service db » : il démarre `app` seul, affiche « migrations et seed ignorés » et **rend la main avec code 0**. C'est un faux succès, contraire à SPEC-001.5.
-2. **`app/db/migrations/` absent** : aucune migration à appliquer (SPEC-001.13).
-3. **`stack/compose.service.yml` absent** : `./dev deploy service` n'avertit que sur stderr et déploie une pile `app` seule sur 127.0.0.1:8081, sans `restart: unless-stopped` (ADR-004).
-4. **`./dev backup` et `./dev restore` sont inopérants** : ils passent par `dbop` (service `migrate`) et `en_marche db` (service `db`), tous deux absents. Ils échoueront avant toute écriture. `restore` appelle aussi `dc stop auth rest`, qui n'existe pas.
-5. **`app` publie uniquement `127.0.0.1:${APP_PORT}:80`** : la publication sur 10.77.0.25 manque (cf. section 1).
-6. Image `app` = `nginx:1.27.3-alpine` (`wget` présent via busybox : healthcheck OK).
-7. Les garde-fous `policies/checks/20-stack-services.sh`, `21-stack-ports.sh`, `22-db-migrations-versionnees.sh` doivent échouer tant que 1 à 5 ne sont pas corrigés. Non exécutés ce tour pour ne pas écrire dans `iterations/002/policies/`.
+Rappel de l'échec du tour 1 : `secrets.py` masquait le module standard `secrets` (AttributeError `choice`). Corrigé par le renommage en `gen_secrets.py`.
 
-## 3. Plan de mise en service (à exécuter après correction des points bloquants)
+Observations non bloquantes, extraites de `./dev logs` :
 
-Préalables (action/developpeur/architecte, pas moi) : services `db`, `auth`, `rest`, `migrate`, `seed` dans `stack/compose.yml` ; `app/db/migrations/001_*.sql` ; décision sur la publication 10.77.0.25 ; `stack/compose.service.yml` si la pile service est retenue.
+1. **Message de sortie trompeur** : `Mise en service (dev) OK ... — http://127.0.0.1:8080/` alors que la pile écoute sur 10.77.0.25:8080. À corriger par l'`action` ou le `developpeur` (fichier `dev`).
+2. **FATAL TimescaleDB** (`db-1`, 12:29:27) : `terminating background worker "TimescaleDB Background Worker Launcher" due to administrator command`. Arrêt normal de worker lors du redémarrage de la base, sans conséquence observée.
+3. **Avertissements GoTrue** (`auth-1`) : `GOTRUE_JWT_ADMIN_GROUP_NAME` et `GOTRUE_JWT_DEFAULT_GROUP_NAME` non supportés, dépréciés. Non bloquant ; à retirer de la configuration de la pile.
+4. **Lignes `ERROR permission denied` dans `db-1`** (12:30:00 — 12:30:05) : produites par mon propre test RLS en rôle `anon` et `authenticated`. Comportement attendu, pas une panne.
+5. **Ordre des conteneurs** : `seed-run` s'exécute entre deux passages de `migrate-run`. Les migrations ont été appliquées avant le seed, donc l'ordre est correct ; le second passage de migration est idempotent. À documenter si ce n'est pas voulu.
 
-**Pile dev** (jetable)
-1. `./dev doctor` puis `./dev policies` (contrôle, observation).
-2. `./dev teardown` (la pile actuelle est issue de l'itération 001 ; à faire seulement si le plan le demande).
-3. `./dev reset` puis `./dev deploy` : SPEC-001.4 (deux URL) et SPEC-001.5 (code ≠ 0 si un service échoue).
-4. Relevés : `./dev status`, `curl -sI http://127.0.0.1:8080/`, `curl -sI http://10.77.0.25:8080/` (si publication retenue), `ss -ltn`.
-5. `./dev backup` puis `./dev reset` puis `./dev deploy` puis `./dev restore dev <fichier.dump>` (scénario SPEC-004.8).
+## 4. Points ouverts
 
-**Pile service** (persistante)
-1. Avant tout : `docker compose ls`, `docker volume ls` (référence pour SPEC-004.7).
-2. `./dev deploy service` (port 8081, secrets `.devenv/secrets/service.env`).
-3. Vérifier après : la pile `devenv` et ses volumes sont inchangés (comparaison avec l'étape 1).
-4. `./dev backup service` régulièrement. `./dev reset service` **exige** `--confirmer-destruction` et une sauvegarde préalable.
+- Décision ADR sur la publication 10.77.0.25 (tour 1, section 1) : toujours à trancher par le chef de projet.
+- Corriger le message `127.0.0.1` dans `./dev deploy` (observation 1).
+- Retirer les variables GoTrue dépréciées (observation 3).
 
-## 4. Risques
+## 5. Accès administrateur
 
-| # | Risque | Gravité | Action proposée |
-|---|---|---|---|
-| R1 | Faux succès de `deploy` (code 0 sans base ni migrations) | Élevée | Faire échouer `deploy` si `db` absent ; bloquant avant toute mise en service |
-| R2 | SPEC-001.3/.4 impossibles avec le driver rootless `builtin` (même port sur deux IP) | Élevée | Décision ADR (amendement, ou driver `slirp4netns`/`pasta` après test) |
-| R3 | IP 10.77.0.25 en bail DHCP (`dynamic`) : un changement d'adresse casse la publication LAN | Moyenne | Adresse fixe ou `APP_LAN_IP` vérifié avant `deploy` |
-| R4 | `backup`/`restore` inopérants : aucune sauvegarde possible à ce jour | Élevée pour la pile service | Ne pas `reset service` tant que backup/restore ne fonctionnent pas |
-| R5 | Images `devenv/app:dev` partagées entre `devenv` et `dnum-service` (même tag) : un rebuild de l'une réécrit le tag de l'autre | Faible | Tag distinct par pile (ex. `devenv/app:service`) |
-| R6 | Pile `devenv` de l'itération 001 encore en marche, hors commit documenté (`deploy.log` : « non-commite ») | Faible | Un `reset` + `deploy` la remettra à l'état du dépôt |
-| R7 | Pas de secrets ni de sauvegardes existants : un `reset` de la pile service effacerait toute donnée non sauvegardée | Élevée | Sauvegarde obligatoire avant tout `reset service` |
-
-## 5. État de la pile au moment du relevé
-
-- `devenv-app-1` : Up 36 min, healthy, `127.0.0.1:8080->80`.
-- `devenv-client-1` : Up 36 min.
-- `dnum-service` : absente.
-- Aucune publication sur 10.77.0.25.
-- Aucun conteneur de test restant (vérifié après chaque essai).
+Le mot de passe admin n'est pas reproduit ici. Il se trouve **uniquement** dans `.devenv/secrets/dev.env` (variable `ADMIN_PASSWORD`, fichier `600`, hors git). L'identifiant `ADMIN_EMAIL` figure dans le même fichier.
