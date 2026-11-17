@@ -1,66 +1,84 @@
-# Itération 002 — Coût (sponsor, fin d'itération)
+# Itération 002 — Coût final (sponsor, clôture)
 
-Source : `./dev cout` → `iterations/002/cout.json`, relevé à **14:29 UTC**. Début 11:39:13 UTC. `fin` est encore `null` dans le relevé : l'itération n'est **pas clôturée** au moment de la mesure. Les chiffres ci-dessous sont donc un cumul à 14:29, pas un coût définitif.
+Source : `./dev cout` en deux relevés, à la clôture (`fin` = 2026-11-17T16:12:37 UTC).
+- Relevé (1) : `./dev cout` sans filtre → `iterations/002/cout-agents.json`
+- Relevé (2) : `DEVENV_COST_PROJECT=-home-spark-docker ./dev cout` → `iterations/002/cout-sessions.json`
+
+Tarifs : `tools/sponsor/tarifs.json` (relevés le 2026-11-17, à vérifier). Montants en USD, équivalent API.
 
 ## 1. Synthèse
 
 | Indicateur | Valeur |
 |---|---|
-| Coût cumulé estimé (équivalent API) | **12,69 USD** (12,6858) |
-| Durée à la mesure | 170,7 min (2 h 51) |
-| Requêtes | 2 295 (103 Opus, 2 192 Haiku) |
-| Boucles AOPR (restitutions d'`observation.md`) | **3** : tour 2, tour 3, tour 3 bis (final). 11 sections `##` au total |
-| Policies exécutées | `policies/results.json` : 31 respectées, 0 violée, 0 non applicable (`pile_demarree: true`, 13:46) |
-| Critères [C] recettés OK | **22** (sur 28 critères [C] décomptés en tour 3), plus 2 réserves (CA-002-9, CA-002-27) et 1 KO partiel (CA-002-28) |
-| Coût par critère [C] OK | **≈ 0,58 USD** (12,69 / 22) ; ≈ 0,45 USD par critère [C] visé (12,69 / 28), indicatif |
+| **Total = (1) + (2)** | **34,7578 USD** (équivalent API) |
+| Sous-total relevé (1), agents | 14,0719 USD |
+| Sous-total relevé (2), sessions | 20,6859 USD |
+| Durée | 273,4 min (4 h 33), de 11:39:13 à 16:12:37 UTC |
+| Requêtes (1) / (2) | 2 985 / 449 (total 3 434) |
+| Boucles AOPR observées | **5** restitutions dans `observation.md` : tour 2, tour 3, tour 3 bis, incident recette, clôture |
 
-## 2. Ventilation par modèle (`tools/sponsor/tarifs.json`, recalcul vérifié)
+**Avertissement :** la somme (1) + (2) n'est pas un total fiable (voir § 5). Les deux relevés se chevauchent probablement et ne sont pas cohérents entre eux.
 
-| Modèle | Requêtes | Input | Output | Cache écriture | Cache lecture | Coût USD | Part |
-|---|---|---|---|---|---|---|---|
-| claude-opus-5-5 | 103 | 206 | 212 543 | 405 457 | 5 049 029 | 7,2888 | 57,4 % |
-| claude-haiku-5-5 | 2 192 | 4 384 | 1 689 620 | 4 898 420 | 393 949 035 | 5,3970 | 42,6 % |
+## 2. Ventilation par relevé
 
-Décomposition par type de jeton (recalcul : Opus 7,2888 ; Haiku 5,3970 ; total 12,6858) :
+### Relevé (1) — sans filtre, 14,0719 USD
 
-- Opus : output 4,25 USD, écriture de cache 2,03 USD, lecture de cache 1,01 USD, input 0,001 USD.
-- Haiku : lecture de cache 3,94 USD, output 0,84 USD, écriture de cache 0,61 USD, input négligeable.
-- Tous modèles : sortie 5,10 USD (40 %), lecture de cache 4,95 USD (39 %), écriture de cache 2,64 USD (21 %), input 0,001 USD.
+| Modèle | Requêtes | Input | Output | Cache écriture | Cache lecture | Coût USD |
+|---|---|---|---|---|---|---|
+| claude-haiku-5-5 | 2 882 | 5 764 | 2 079 243 | 6 291 433 | 495 647 793 | 6,7831 |
+| claude-opus-5-5 | 103 | 206 | 212 543 | 405 457 | 5 049 029 | 7,2888 |
 
-## 3. Durée et cadence
+Aucune ligne Sonnet dans ce relevé.
 
-- Durée : 170,7 min. Coût moyen : 0,074 USD/min.
-- Entre le relevé précédent de cette itération (54,7 min, 7,81 USD) et celui-ci : +116 min, +4,87 USD, soit **≈ 0,042 USD/min** de coût marginal.
+### Relevé (2) — filtré projet `-home-spark-docker`, 20,6859 USD
 
-## 4. Comparaison
+| Modèle | Requêtes | Input | Output | Cache écriture | Cache lecture | Coût USD |
+|---|---|---|---|---|---|---|
+| claude-haiku-5-5 | 82 | 212 | 55 119 | 352 490 | 14 118 322 | 0,2128 |
+| claude-opus-5-5 | 169 | 462 | 126 754 | 225 051 | 55 587 214 | 14,7796 |
+| claude-sonnet-5-5 | 198 | 552 | 138 818 | 301 542 | 35 503 208 | 5,6935 |
 
-**Avec le relevé précédent de l'itération 002 (54,7 min, 7,81 USD) :**
+### Ventilation cumulée par modèle (somme brute des deux relevés)
 
-| | Relevé précédent | Relevé final | Écart |
+| Modèle | Requêtes | Coût USD | Part du total brut |
 |---|---|---|---|
-| Coût cumulé | 7,81 USD | 12,69 USD | +4,87 USD (+62 %) |
-| Durée | 54,7 min | 170,7 min | +116 min |
-| Requêtes Opus | 103 | 103 | 0 |
-| Requêtes Haiku | 218 | 2 192 | +1 974 |
-| Coût Opus | 7,2888 USD | 7,2888 USD | **0** (anomalie, voir § 6) |
-| Coût Haiku | 0,5242 USD | 5,3970 USD | +4,87 USD |
+| claude-opus-5-5 | 272 | 22,0684 | 63,5 % |
+| claude-haiku-5-5 | 2 964 | 6,9959 | 20,1 % |
+| claude-sonnet-5-5 | 198 | 5,6935 | 16,4 % |
+| **Total** | **3 434** | **34,7578** | 100 % |
 
-**Avec l'itération 001 :** `iterations/001/cout.json` donne 0,43 USD (Opus, 9 requêtes) pour 1,9 min. Ce relevé est un instantané très précoce (le cumul n'a pas été relancé ensuite, `fin` null) : la comparaison de coût total n'est pas significative. L'itération 001 n'a pas de `cout.md`.
+Contrôle : 14,0719 + 20,6859 = 34,7578 USD. Requêtes : 2 985 + 449 = 3 434.
+
+## 3. Évolution
+
+| Mesure | Coût USD | Durée | Remarque |
+|---|---|---|---|
+| Itération 001 (relevé précoce, Opus seul) | 0,43 | 1,9 min | Instantané très précoce, non comparable |
+| Itération 002, tour 2 | 7,81 | 54,7 min | Relevé de `cout.md` précédent |
+| Itération 002, relevé du 14:29 | 12,69 | 170,7 min | Relevé intermédiaire |
+| Itération 002, relevé (1) à la clôture | 14,07 | 273,4 min | Sans filtre |
+| Itération 002, total final (1) + (2) | 34,76 | 273,4 min | Voir avertissement § 5 |
+
+- Par rapport au tour 2 (7,81 USD) : +26,95 USD, soit un coût multiplié par 4,45.
+- Par rapport à l'itération 001 (0,43 USD) : la comparaison n'est pas significative, car le relevé 001 n'a pas été relancé après 1,9 min.
+- Le relevé (1) n'a progressé que de 1,38 USD depuis 14:29 (Haiku 5,40 → 6,78 ; Opus inchangé à 7,2888). Le relevé (2) n'est pas comparable avec les précédents, car il est filtré.
+
+## 4. Coût par critère
+
+- Critères [C] OK recettés au tour 2 : 22 (rapport `cout.md` intermédiaire). Dénominateur : 28 critères [C] décomptés.
+- Coût par critère OK : 34,76 / 22 ≈ **1,58 USD** (indicatif).
+- Coût par critère [C] visé : 34,76 / 28 ≈ **1,24 USD** (indicatif).
+- Le compte final des critères constatés livrés n'a pas été refait à la clôture. La passe 3 de recette est verte avec réserves (`cloture.md`), mais la liste finale OK/KO n'est pas recomptée ici. Ces ratios sont donc à considérer comme indicatifs.
 
 ## 5. Limites de la mesure
 
-- **Non clôturée** : `fin` est `null`. Ce chiffre est un cumul à 14:29 UTC. Un relevé définitif demande `./dev cout` après clôture.
-- **Périmètre non filtré** : `./dev cout` agrège tout l'usage Claude Code depuis 11:39 UTC, sans filtre par session ni par agent. La colonne `sous_agents` vaut 0 partout : l'attribution par rôle (developpeur, testeur, client, sponsor, etc.) n'est pas possible. Les 2 192 requêtes Haiku peuvent venir d'autres sessions de la machine.
-- **Tarifs à vérifier** : tarifs relevés le 2026-11-17 dans `tools/sponsor/tarifs.json`. Non vérifiés contre la grille officielle à cette date. Pas d'usage contractuel sans vérification.
-- **Équivalent API, pas facturation** : sous abonnement Claude, le coût réel diffère (forfait).
-- **Critères livrés partiels** : les 22 critères OK viennent de la recette du tour 2. La recette du tour 3 (corrections CA-002-27/28/34/37/38/39) n'a pas été exécutée (gel de la pile `dev`). Ces critères ne sont donc pas constatés livrés. Les critères [T] et [R] ne sont pas recettés par le client : ils ne figurent pas au dénominateur.
-- **Recette à la souris et au clavier uniquement** : le compte rendu client signale une réserve sur l'étape 6 bis (URL non vérifiable) et un incident d'exécution à l'étape 13. Ces points n'invalident pas les 22 critères, mais ils fragilisent le décompte.
-- **Lecture de l'observation** : les 3 restitutions sont cumulées dans `observation.md`. Je compte les boucles par restitution, pas par cycle de policy.
+1. **Relevés incohérents entre eux.** Le relevé (1), sans filtre, contient 103 requêtes Opus et aucune requête Sonnet. Le relevé (2), filtré sur le projet, contient 169 requêtes Opus et 198 requêtes Sonnet. Un relevé sans filtre devrait être au moins égal à un relevé filtré. Le total Opus de (1) (7,2888 USD) est aussi identique, à 4 décimales, à la valeur du relevé 14:29 et à celle du tour 2. C'est l'anomalie déjà signalée dans le relevé 14:29. Elle n'est pas résolue.
+2. **Chevauchement probable.** Les deux relevés couvrent la même période (11:39:13 → 16:12:37) et peuvent compter les mêmes requêtes. La somme (1) + (2) peut donc double-compter. Le total de 34,76 USD est une borne haute, et non un coût mesuré.
+3. **Périmètre non filtré par agent.** La colonne `sous_agents` vaut 0 partout. L'attribution par rôle (developpeur, testeur, client, sponsor, etc.) n'est pas possible avec cet outil. Une partie des requêtes peut venir d'autres sessions de la machine. Le relevé (2) filtre sur le projet, pas sur l'itération.
+4. **Tarifs à vérifier.** Les tarifs de `tools/sponsor/tarifs.json` sont relevés le 2026-11-17 et ne sont pas vérifiés contre la grille officielle. Pas d'usage contractuel sans vérification.
+5. **Équivalent API, pas facturation.** Sous abonnement Claude, le coût réel diffère (forfait). Les 34,76 USD sont une valorisation, non une dépense.
+6. **Critères.** Le ratio par critère repose sur un décompte intermédiaire (22 OK au tour 2), pas sur le décompte final.
 
-## 6. Anomalie de mesure à vérifier
+## 6. Recommandation
 
-Le coût Opus est **identique à 4 décimales** (7,2888 USD, 103 requêtes, mêmes jetons) entre le relevé précédent (54,7 min) et celui-ci (170,7 min), alors que la session a continué pendant 116 min et que Haiku a progressé de 1 974 requêtes. Soit l'agrégation Opus ne voit plus les sessions Opus après 54,7 min, soit le relevé précédent était déjà recalculé. Dans les deux cas le total Opus est suspect. À vérifier avant toute comparaison de coût par agent ou par tour.
-
-## 7. Recommandation
-
-Relancer `./dev cout` à la clôture (`fin` renseigné) et vérifier pourquoi le coût Opus ne bouge pas entre deux relevés. Sans cela, le chiffre de 12,69 USD n'est ni définitif ni attribuable.
+Corriger `./dev cout` pour que le relevé sans filtre soit toujours supérieur ou égal au relevé filtré, puis relancer les deux relevés. Tant que ce n'est pas fait, le total de 34,76 USD ne doit servir qu'à une borne haute, pas à une comparaison entre itérations.

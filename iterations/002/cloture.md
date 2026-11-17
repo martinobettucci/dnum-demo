@@ -67,3 +67,16 @@ Voir `perimetre.md` §8–§9 :
 - policy 07 apt ; `dae9044` en dur ;
 - tests de SPEC-003.11 et de CA-002-38 ; SPEC-003.9 réécrite pour service ;
 - sauvegarde hors hôte.
+
+## Coût final (C11)
+**34,76 USD**, en équivalent tarif API, de 11:39 à 16:12 UTC, soit 273 min.
+- 14,07 USD pour les agents de rôle : projet `-home-spark-docker-devenv`.
+- 20,69 USD pour les 4 sessions d'équipe et le chef de projet : projet `-home-spark-docker`.
+
+Précision du chef de projet sur la réserve « borne haute » du sponsor : les deux relevés portent
+sur **deux répertoires de transcripts distincts et disjoints**, l'un n'étant pas une version
+filtrée de l'autre. Ils ne se chevauchent donc pas, et la somme est le total.
+Limites qui restent :
+- tarifs publics à vérifier ; sous abonnement, le coût réel diffère ;
+- le relevé des sessions peut contenir une activité sans lien avec l'itération ;
+- le total Opus des agents est figé depuis 14:29, car les agents ont ensuite tourné sur Haiku.
