@@ -1,5 +1,50 @@
 Mise en service assurée exclusivement par le responsable applicatif. Aucun autre agent ne démarre, n'arrête ni ne détruit la pile : adressez vos demandes au chef de projet.
 
+# Itération 002 — tour 3 : BASCULE dev vers service (exécution, 2026-11-17)
+
+- Statut : **SERVICE PRÊTE (pré-bascule)**. Étapes 1 à 6 du chef de projet exécutées et vérifiées. Les étapes de coupure (gel de dev, sauvegarde finale après gel, proxy, validation utilisateur : S5 à S16) **ne sont pas jouées** dans ce tour.
+- Dev : **intacte et en ligne**. Aucun `reset`, `teardown` ni redéploiement de dev. Seule écriture sur dev : la sauvegarde `backup dev`.
+- Version déployée : commit **`3c93a08`**. Le code déployé (`app/`, `stack/`, `dev`, `tools/`) est identique à ce commit. Modifications non commitées hors code déployé : `specs/`, `specs/adr/`, `policies/checks/35-*`, journaux, `policies/results.json` (à commiter, prérequis P5 partiel).
+- Durées : `deploy service` 19 s (1er passage), 6 s (2e passage, CA-002-33). Restauration : rc 0 (durée non mesurée précisément).
+- Incidents : **aucun échec bloquant**. `deploy` rc 0 deux fois ; `restore` rc 0 ; aucun contournement. Écarts consignés en fin de section.
+
+## Tour 3 : exécution pas à pas
+
+| Étape | Commande / action | Résultat |
+|---|---|---|
+| 1 | `./dev backup dev` | rc 0. Dump horodaté `20261117-133329` + `.json` : migration `005`, commit `3c93a08`. Volume `devenv_db-data` inchangé. |
+| 2 | `service.env` = copie de `dev.env` | Mode 600 (répertoire 700). Les six clés sont présentes (POSTGRES_PASSWORD, JWT_SECRET, ANON_KEY, SERVICE_ROLE_KEY, ADMIN_EMAIL, ADMIN_PASSWORD). JWT de 64 caractères. Valeurs non affichées. |
+| 3 | `./dev deploy service` | rc 0, 19 s. Migrations 001 à 005, seed admin créé puis profil admin actif. `app`, `db`, `auth` healthy. Sortie : `http://10.77.0.25:8081/` (P4 respecté). |
+| 3 bis | Point de vigilance seed (ADR-012) | GoTrue v2.170.0 renvoie `email_confirmed_at` **et** `confirmed_at` pour le compte admin (lecture depuis le conteneur `auth`, réseau interne). La passerelle nginx bloque `/auth/v1/admin` depuis l'extérieur (403, policy 13) : comportement voulu, non contourné. |
+| 4 | `./dev restore service <dump 20261117-133329>` | rc 0. Le seed a conservé le compte admin existant (« inchangé »), profil actif. |
+| 4 bis | Purge des comptes `@test.invalid`, **sur service uniquement**, une transaction | Supprimés : **385 comptes**, **173 tâches**, **36 entrées de temps**, **47 propositions**. Contrôle préalable : aucune ligne d'un compte hors test touchée (abandon automatique sinon). Restant sur service : **8 comptes**, 3 tâches, 1 entrée de temps, 1 proposition. |
+| 5 | `DEVENV_PILE=service ./dev policies` | rc 0 : **31 respectées, 0 violée**. |
+| 5 bis | Connexion admin par l'API (`/auth/v1/token`) | HTTP 200, jeton délivré. Profil admin actif vu via REST. |
+| 5 ter | Accès anonyme (clé anon) à `tasks`, `profiles`, `time_entries`, `help_proposals` | HTTP 401 sur les quatre (RLS). |
+| 5 quater | Santé | `dnum-service` : `app`, `db`, `auth` healthy ; `rest` running (pas de healthcheck, comme en dev). |
+| 5 quinquies | Redémarrage | `RestartPolicy = unless-stopped` sur `db`, `auth`, `rest`, `app` de service. Dev : `no` (voir écart E). |
+| 5 sexies | Ports | `ss -ltn` : `10.77.0.25:8080` et `10.77.0.25:8081` écoutent ensemble. Aucune écoute sur `127.0.0.1` ni `0.0.0.0`. `curl` : 8080 → 200, 8081 → 200. |
+| 5 septies | **CA-002-1 [R]** | (a) `curl -sI http://10.77.0.25:8081/` → 200. (b) adresse seule, sans `127.0.0.1`/`0.0.0.0`. Partie « après reset puis deploy » **non jouée** (reset de dev interdit) : écart accepté. |
+| 5 octies | **CA-002-33 [R]** | 2e `./dev deploy service` **sans reset** : rc 0, horodatages `2026-11-17T13:33:58Z` et `13:35:39Z` (`.devenv/deploy.log`). Empreintes avant/après **identiques** (identifiants et e-mails des comptes hors admin, condensats de mots de passe hors admin, tâches) ; `service.env` **inchangé** (empreinte identique) ; volumes inchangés ; connexion admin **valide** après. Le condensat du compte admin change à chaque seed : attendu. |
+| 5 nonies | **CA-002-36 [R]** | (a) `docker compose ls` : `devenv` running(5) inchangé avant/après ; `dnum-service` ajouté. `docker volume ls` : `devenv_db-data` inchangé, `dnum-service_db-data` créé. (b) `curl` 8081 → 200. (c) `./dev reset service` **sans** `--confirmer-destruction` : rc 1, « Rien n'a été détruit » ; volumes et conteneurs intacts après refus. |
+| 6 | Équivalence dev / service (lecture seule, comptages et empreintes) | Comptes hors test : **8 sur dev, 8 sur service**. Empreintes identiques sur identifiants/e-mails, mots de passe hors admin, tâches, entrées de temps et propositions hors test. **Delta d'inscription : 0** à l'instant du contrôle (dev recomptée après contrôles : 8). |
+
+## Écarts et points ouverts (à trancher par le chef de projet)
+
+- **A. Comptes réels.** Le chef de projet attend **3 comptes réels**. Service en compte **8 hors `@test.invalid`** : 1 admin, 7 membres (6 actifs, 1 inactif). Trois de ces comptes ont des tâches. Un compte hors test a « test » dans son identifiant. **Rien de ceci n'a été supprimé** (purge limitée à `@test.invalid`, comme demandé). Décision requise avant la bascule.
+- **B. P6 (adresse LAN stable).** `10.77.0.25` inchangée à la date de ce tour. La réservation DHCP est une action réseau de l'utilisateur, **non vérifiable par le responsable applicatif**.
+- **C. P5 partiel.** Code déployé commité (`3c93a08`). Restent à commiter : `specs/`, `specs/adr/` (ADR-013 à 015), `policies/checks/35-*`, journaux, `results.json`.
+- **D. Dev non gelée.** Dev reste en ligne et accessible en LAN. Toute écriture sur dev après le dump `20261117-133329` (13:33) **n'est pas dans service**. La sauvegarde finale après gel (S5/S6) reste obligatoire avant la bascule du proxy.
+- **E. Redémarrage de dev.** Dev n'a aucune politique `restart` (ADR-009, R-i). Un redémarrage de l'hôte ne ramène que service. À corriger si dev reste en ligne longtemps.
+- **F. Journalisation.** Le seed affiche l'identifiant admin dans la sortie de `deploy` et de `restore`. Ce n'est pas un secret, mais à éviter dans les journaux partagés.
+- **G. Résultats policies.** `iterations/002/policies/results.json` a été écrasé par le passage en mode service (31 respectées). Le passage dev précédent (30 respectées, 0 violée) n'est plus dans le fichier.
+
+## Vérifications : résumé
+
+- Pour le service : **prêt**. Santé, connexion admin, RLS anonyme, ports, redémarrage automatique, déploiement idempotent et comptages vérifiés.
+- Non vérifié, hors périmètre de ce tour : P6, la bascule du proxy, la validation par les utilisateurs (D8).
+
+
 # Itération 002 — tour 2 : mise en service DEV (SUCCÈS)
 
 - Statut : **succès**. `./dev deploy` (pile `dev` uniquement, sans `reset`) rend la main avec le code 0.

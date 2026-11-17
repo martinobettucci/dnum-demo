@@ -1,6 +1,7 @@
 # ADR-011 — Migrations additives et non destructives sur données réelles
 
 Statut : accepté (itération 002, tour 3, 2026-11-17). Amende SPEC-004.12 (par la nouvelle SPEC-004.18).
+Référence de comparaison des fichiers `001` à `005` précisée par ADR-015 (git dans le runner ; itération 002 : commit `dae9044`, ADR-013 D-3).
 Specs touchées : SPEC-004.18 (nouvelle), SPEC-006 §3 (policy n° 29 `DB-migrations-additives`).
 
 ## Contexte

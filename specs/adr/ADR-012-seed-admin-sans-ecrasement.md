@@ -42,6 +42,10 @@ Specs touchées : SPEC-003 (003.5 amendé ; 003.10 à 003.12 nouvelles), SPEC-00
 6. **Pas de changement de mot de passe admin** dans cette itération (aucune fonctionnalité d'interface ni d'outil).
    Le mot de passe admin ne peut donc changer que si un utilisateur le fait par un canal existant, ce qui est
    aujourd'hui sans objet ; le principe reste valable quand cette fonctionnalité existera.
+   **Complément (tour 4, 2026-11-17, ADR-013 D-5)** : cette affirmation est incomplète. L'interface ne permet pas de changer
+   le mot de passe, mais la passerelle relaie `/auth/v1/*` vers GoTrue sauf `/auth/v1/admin/*` (SPEC-001.6, SPEC-001.7). Un
+   `PUT /auth/v1/user` avec le jeton de l'utilisateur atteint donc GoTrue : le canal API existe, il n'est ni spécifié ni testé.
+   Hors périmètre 002 (confirmé). Point ouvert : accepter ce canal ou le fermer (ADR-013, point 2).
 
 ## Conséquences
 

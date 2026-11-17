@@ -8,6 +8,8 @@ Statut : **accepté, tranché** (itération 002, tour 2). Décision du chef de p
   Le classement B initialement prévu par la voie 1 n'est pas retenu : le chef de projet tranche en A.
 
 Specs touchées : SPEC-001.15 (b, d amendé, e ajouté), SPEC-006 §2 (CA-002-2, CA-002-36) et §3 (policies 25 et 28).
+Tour 4 (mission du chef de projet, 2026-11-17) : contrôle continu de la policy 25 précisé par ADR-014 (audit hors runner) ;
+garde esbuild : libellé « cas C esbuild gardé » signalé et non tranché (ADR-013 D-1). Classement esbuild inchangé : cas A.
 Complète ADR-002 (dépendances épinglées).
 
 ## Contexte
@@ -104,6 +106,9 @@ compléter pour lever ce point ; elle n'est pas une condition du classement A re
    `FRONT-auth-js-non-appel` (SPEC-001.15 (e), SPEC-006 §3). Identifiants attendus par la 25 : `GHSA-67mh-4wv8-2f99` et
    `GHSA-8r88-6cj9-9fh5`. Échec si un identifiant n'est pas listé ici, ou si la sévérité est haute ou critique. Si le
    registre est injoignable : statut « non exécutée », jamais « réussie ».
+   **Précisé (tour 4, ADR-014)** : le rapport est produit hors runner par `./dev audit-npm`, dans `iterations/<NNN>/policies/` :
+   `audit-npm.json` (sortie brute) et `audit-npm.meta.json` (`statut`, sha256 de `package-lock.json`). La policy 25 vérifie le
+   statut et le sha256 du lock ; le contrôle par date de modification est retiré. `BLOQUE_AUTHJS="non"` (ligne 17 de la policy).
 
 ## Conditions pour que la décision tienne
 
@@ -149,13 +154,19 @@ compléter pour lever ce point ; elle n'est pas une condition du classement A re
 
 1. **Chef de projet** : lever ou non la réserve de portée (C2, bundle) avant la recette de l'itération 003.
 2. **Policy** : exécuter la policy n° 28 `FRONT-auth-js-non-appel` dans `iterations/002/policies/` avant tout `deploy service`.
+   *(Tour 4 : résultat « respectée » relevé dans `results.json` lors de la réaction ; à réexécuter avant le déploiement.)*
 3. **Policy** : exécuter la policy n° 25 (identifiants, metafile C2, recherche `serve`/`watch`/`context(`).
+   *(Tour 4 : mécanisme retenu, ADR-014 (`./dev audit-npm` puis `./dev policies`). Exécution à faire.)*
 4. **Divergence de sources** : `122914` (refus de `docker run`) et `123343` (`npm audit` réussi via le wrapper). Rejouer
    le relevé par la policy n° 25 pour que la preuve soit unique.
 5. **Itération 003** : inscrire au périmètre la montée supabase-js (auth-js ≥ 2.70.0) et esbuild 0.28.x.
+6. **Garde esbuild (tour 4)** : libellé « cas C esbuild gardé » non tranché. Garde bloquant ou note non bloquante (état du
+   code) : décision du chef de projet (ADR-013 D-1). Le classement A est maintenu tant que cette décision n'est pas prise.
 
 ## Historique
 
 - Tour 2, état initial : auth-js en cas C provisoire, bloquant pour `deploy service` (preuve de non-appel absente).
 - Tour 2, arbitrage 2026-11-17 (premier) : esbuild cas A ; auth-js cas C provisoire, bloquant pour `deploy service`.
 - Tour 2, décision du chef de projet 2026-11-17 : auth-js voie 1 retenue, cas A, blocage levé sous policy 28.
+- Tour 4, mission du chef de projet 2026-11-17 : `BLOQUE_AUTHJS="non"` confirmé (policy 25, ligne 17 ; le relevé de réaction
+  « oui » était obsolète) ; audit npm hors runner (ADR-014) ; garde esbuild : libellé « cas C esbuild gardé » signalé, non tranché (ADR-013 D-1).
