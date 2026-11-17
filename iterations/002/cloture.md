@@ -32,6 +32,11 @@ Ce sont les points laissés « NON TRANCHÉ » par l'acceptation du PO (`perimet
 | U1 | 8 comptes réels au lieu de 3 : ce sont 5 inscriptions réelles postérieures au premier comptage, toutes conservées. Décisions D1 à D8 de la bascule : validées par l'utilisateur (« choix recommandés »), sauf D5 (sauvegarde hors hôte), reportée en 003. Étapes S5 à S7 (maintenance, blocage LAN) : remplacées par le rattrapage du delta, qui s'est révélé nul. S14 (proxy) : FAIT et vérifié. S15 (validation de l'utilisateur) et P6 (DHCP) : en attente de l'utilisateur. |
 | C2 | Relu par le chef de projet dans `junit.xml` : `test_paquet_installee_dans_le_runner_a_la_version_epinglee[git, curl, bash]` exécutés et réussis. |
 | C13, C14, C15, E2, E5, E9 | Points de traçabilité documentaire mineurs : ACCEPTÉS en l'état, et repris dans une revue documentaire au backlog 003. |
+| C9 | Écart de version **ACCEPTÉ temporairement** : service en 3c93a08, dev en 29a3980. Entre les deux, `app/web` est identique (même `/app.js`) et les migrations aussi. Seuls diffèrent la config nginx (no-cache, en-têtes par location), `build-sha256` et l'outillage. Il sera résorbé par le premier deploy service autorisé par l'utilisateur. |
+| CA-002-40 / SPEC-003.11 | Sous-cas « admin existant non confirmé, rc ≠ 0 » : **REPORT nommé** en 003 (BL-003 : test du stub GoTrue pour SPEC-003.11). Le cas nominal est prouvé : policy 35, 3 tests SPEC-003.10 (`tests/test_003_admin.py`), seed réel sur service. |
+| C11 | Coût : le relevé définitif est fait après `./dev iteration-close` (fin renseignée), en 2 relevés additionnés (agents de rôle et sessions d'équipe). Voir `cout.md`. |
+| E6 | Décompte des [T] (49 contre 46) : écart de comptage documentaire, ACCEPTÉ. La revue documentaire 003 le réconcilie. |
+| E3 / E4 / E7 / E8 | Correspondances proposées par le PO CONFIRMÉES : E3 = U1, E4 = table A ligne 2, E7 = C5, E8 = C2. C13 relève de la configuration (ADR-009, restart sur service) : il est conforme sur service, et l'absence de restart sur dev est voulue. |
 | C9 / C10 / C12 | Voir ci-dessous. Tout est commité et poussé. L'inscription de 13:00 est un utilisateur réel passé par le proxy, il fait partie des 8 comptes réels. |
 
 ## Correction de l'acceptation PO (point 8)

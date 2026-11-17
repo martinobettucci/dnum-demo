@@ -425,7 +425,7 @@ Statuts : **ACCEPTÉ** = écart connu accepté par le chef de projet ; **PROUVÉ
 | 7b | O4, `mise-en-service.md` : date d'audit et troisième paquet (B2) | **Responsable applicatif** | Hors backlog PO. La correction (date 13:45:51, nom du paquet) n'est pas vérifiée par le PO. |
 | 7c | O5, policy 07 `ENV-apt-epingle` (B2) | **REPORTÉ** | BL-003-4 (§9). |
 | 7d | O6, `dae9044` en dur dans la policy 29 (B2) | **REPORTÉ** | BL-003-5 (§9). |
-| 8 | Mise à jour de la pile service avec les correctifs nginx (A) | **FAIT** | Enregistré comme fait, pas comme écart. Source : réaction (A) et `mise-en-service.md` l.43-64. Le chef de projet indique une autorisation de l'utilisateur en attente ; la réaction ne le mentionne pas. Les deux informations ne sont pas réconciliées dans les sources lues : à consigner par le chef de projet. |
+| 8 | Mise à jour de la pile service avec les correctifs nginx (A) | **NON FAIT** (correction du PO, 2026-11-17) | Fait d'état, et non un écart accepté : **le travail reste à faire.** Seule la bascule du proxy est faite (commit 3c93a08). La mise à jour de `service` (`Cache-Control: no-cache`, en-têtes de sécurité par location, `build-sha256`) n'est pas faite ; elle est en attente d'autorisation de l'utilisateur. Le « FAIT » de la réaction (A, `mise-en-service.md` l.43-64) porte sur la bascule et non sur cette mise à jour. Source : `iterations/002/cloture.md`, « Correction de l'acceptation PO (point 8) ». |
 
 ### B. Points de la réaction non couverts par la liste du chef (NON TRANCHÉ)
 
@@ -450,8 +450,65 @@ Le PO ne tranche pas ces points à la place du chef de projet. Ils sont listés 
 | C14 | Traçabilité : `rapport-client.md` sans passe 2 et l.81 périmé ; `cout.md` sans passe 2 ; `mise-en-service.md` titré « BASCULE » alors que son statut est « SERVICE PRÊTE (pré-bascule) » ; E8 (policy 35, journal `133755`) | Non tranché. | Chef de projet (consignation) ; client ; responsable applicatif ; développeur. |
 | C15 | Reliquats : compteur de débit (202 inscriptions, pas de compteur de test) ; variables GoTrue dépréciées ; message `127.0.0.1` dans `./dev` | Non tranché. Le message touche CA-002-1 (c), contrôle [P] déjà au périmètre. | Testeur ; action. |
 
-### C. Verdict du product owner
+### C. Verdict du product owner (mise à jour 2026-11-17, après `iterations/002/cloture.md`)
 
-- Les trois conditions bloquantes du verdict de la réaction (O2, SPEC-003.9, réserves de recette et écart « reset ») sont tranchées (points 1 à 3 et 6).
-- **Acceptation formelle de clôture de l'itération 002 : non prononcée à ce stade.** Elle dépend de l'arbitrage du chef de projet sur la section B, en particulier sur **CA-002-40** (C3, critère de 002 sans preuve), **C6 et C10** (fragment de secret à purger avant tout commit) et **C9** (version du service, avant toute étape de proxy).
-- Aucun point de la section B n'est réputé accepté par ce document.
+Source des décisions : `iterations/002/cloture.md`, « Décisions complémentaires du chef de projet ». Le PO reprend
+chaque décision par son identifiant et renvoie à cloture.md, sans la reformuler.
+
+#### C.1 Reprise point par point (C2 à C15, E1 à E9, U1, S14, S15, P6)
+
+Légende : **DÉCIDÉ** = décision inscrite dans cloture.md. **RÉSERVE** = décision inscrite mais incomplète ou
+contredite (motif). **EN ATTENTE** = pas de décision, action attendue de l'utilisateur. **NON TRANCHÉ** = identifiant
+absent de cloture.md.
+
+| Id | Statut PO | Renvoi dans cloture.md | Remarque PO |
+|---|---|---|---|
+| C2 | DÉCIDÉ | Tableau, ligne C2 | |
+| C3 | RÉSERVE | Ligne C3 | Couverture de CA-002-40 partielle : voir C.2. |
+| C4 | DÉCIDÉ | Ligne C4 | |
+| C5 | DÉCIDÉ | Ligne C5 | |
+| C6 | DÉCIDÉ | Ligne C6 | |
+| C7 | DÉCIDÉ | Ligne C7 | Décision portant sur `dev`. `service` n'a pas les correctifs (point 8). |
+| C8 | DÉCIDÉ | Ligne C8 | CA-002-38 est [C] seul (perimetre §4) : aucune obligation [T]. Recette OK en passe 3 seulement. |
+| C9 | RÉSERVE | Pas de ligne propre. La ligne « C9 / C10 / C12 » renvoie à la correction du point 8, qui ne traite pas de la version | Écart de version (`service` 3c93a08, `dev` 29a3980) ni accepté ni refusé. La réaction demandait de trancher « avant toute étape de proxy » ; la bascule du proxy (S14) est faite. |
+| C10 | DÉCIDÉ | Ligne « C9 / C10 / C12 » : « Tout est commité et poussé » | |
+| C12 | DÉCIDÉ | Même ligne : compte réel inscrit vers 13:00 conservé dans les 8 comptes réels | |
+| C13 | DÉCIDÉ | Ligne « C13, C14, C15, E2, E5, E9 » : accepté en l'état, revue documentaire au backlog 003 | La réaction classe C13 comme point de configuration (ADR-009), non documentaire. À confirmer par le chef de projet. |
+| C14 | DÉCIDÉ | Même ligne | |
+| C15 | DÉCIDÉ | Même ligne | |
+| E1 | DÉCIDÉ | Ligne E1 | |
+| E2 | DÉCIDÉ | Ligne « C13, C14, C15, E2, E5, E9 » | |
+| E5 | DÉCIDÉ | Même ligne | |
+| E9 | DÉCIDÉ | Même ligne | |
+| U1 | RÉSERVE | Ligne U1 | D1 à D8 validés, D5 reportée en 003 ; 8 comptes réels acceptés ; S5 à S7 remplacées par le rattrapage. S15 et P6 restent EN ATTENTE. |
+| S14 | DÉCIDÉ | Ligne U1 : « FAIT et vérifié » | Consigné par le chef de projet ; la réaction ne documente pas cette bascule. |
+| S15 | EN ATTENTE | Ligne U1 et « En attente de l'utilisateur », point 2 | Action de l'utilisateur, pas une décision. |
+| P6 | EN ATTENTE | Ligne U1 et « En attente de l'utilisateur », point 3 | Action de l'utilisateur, pas une décision. |
+
+**Identifiants absents de cloture.md : NON TRANCHÉ** : C11 (coût, `fin: null`), E6 (décompte de tests [T] 49 contre 46),
+E7 (SPEC-004.3 PASS/SKIP selon les passes), E8 (contradictions du tour 3 bis, dont O2) et E3/E4 (ligne 2 de la table A
+seulement). Les contenus de E7 et E8 sont proches de C5 et C2 ; le chef de projet doit confirmer ces rapprochements.
+Le point 8 (mise à jour de `service`) est une action en attente d'autorisation, traitée dans la table A.
+
+#### C.2 Cohérence avec `perimetre.md`
+
+- **CA-002-40** ([T] + [P]) :
+  - [P] : la policy 35 existe (`policies/checks/35-admin-seed-sans-ecrasement.sh`, REF SPEC-003.10 | SPEC-003.12). Vérifié.
+  - [T] : `iterations/002/tests/` ne contient que des sorties (`junit.xml`, `resultat.txt`, rapports) ; **aucun fichier de test ne s'y trouve**. Les 3 tests SPEC-003.10 sont dans `tests/test_003_admin.py` (l.148, 164, 177). Ils apparaissent dans `iterations/002/tests/junit.xml` (l.19). Le seul échec relevé dans ce fichier (l.1) est `test_seul_admin_email_hors_comptes_de_test` (SPEC-003.9). Le statut « au vert » des trois tests est repris de cloture.md ; je ne l'ai pas relu ligne à ligne.
+  - **Sous-cas non couvert** : CA-002-40 prévoit aussi que, si le compte existe sans e-mail confirmé, le seed s'arrête avec un code non nul sans rien modifier. Les trois tests vérifient seulement le cas confirmé (rc = 0). La policy 35 contrôle les appels PUT/PATCH/DELETE, pas ce code retour. cloture.md renvoie « le test de SPEC-003.11 » au backlog 003 sans traiter ce sous-cas. Il faut une décision explicite : report nommé au backlog 003, ou preuve exigée avant clôture.
+- **C8 / CA-002-38** : report au backlog 003 cohérent avec perimetre §4 ([C] seul) et §9. cloture.md ajoute test et policy au backlog 003, ce que perimetre ne demande pas.
+
+#### C.3 Verdict
+
+**Acceptation formelle de clôture de l'itération 002 : NON PRONONCÉE.** Des points restent sans décision :
+
+1. **Point 8, mise à jour de la pile `service`** : travail à faire, en attente d'autorisation de l'utilisateur. C'est une action, pas une décision du PO.
+2. **C9**, écart de version `service` (3c93a08) et `dev` (29a3980) : non tranché.
+3. **CA-002-40, sous-cas « compte existant sans e-mail confirmé »** : ni test ni policy. Report explicite ou preuve à exiger.
+4. **C11** (coût, `fin: null`, coût Opus identique entre deux relevés) : absent de cloture.md.
+5. **E6** (décompte [T] 49 contre 46) : absent de cloture.md, aucune correspondance.
+6. **E3, E4, E7, E8** : absents de cloture.md sous ces identifiants. Rapprochements proposés, non confirmés : E3 avec U1, E7 avec C5, E8 avec C2 ; E4 est traité par la ligne 2 de la table A.
+7. **S15** (validation des comptes réels par l'utilisateur) et **P6** (réservation DHCP de `10.77.0.25`) : EN ATTENTE de l'utilisateur.
+
+Rien de ce qui précède n'est réputé accepté par ce document. Le verdict sera repris quand les points 1 à 7 seront tranchés
+ou consignés comme reports nommés par le chef de projet.
