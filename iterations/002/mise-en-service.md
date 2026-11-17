@@ -405,3 +405,28 @@ Comptages après (aucune écriture sur service) : service inchangé : 8 comptes,
 ## Confidentialité
 
 Aucun secret, e-mail ni nom dans ce compte rendu. Les comptages et identifiants de travail sont restés dans `.devenv/delta/` (ignoré par git). Ce fichier n'est **pas commité** : décision à prendre par le chef de projet.
+
+## Mise en service DEV sans reset — étape 4 de la séquence de contrôle (2026-11-17 ~15:55 UTC)
+
+Mise en service assurée exclusivement par le responsable applicatif. Aucun autre agent ne démarre, n'arrête ni ne détruit la pile : adressez vos demandes au chef de projet.
+
+Périmètre : pile **dev** uniquement. Pile **service** hors périmètre (ni backup, ni deploy, ni écriture ; lecture de comptages et d'identifiants seulement). Aucun reset, aucun teardown.
+
+- **Version déployée** : commit **29a3980** (code applicatif `app/`, `stack/`, `web/`, `dev` identique à `ff6715f`, HEAD au moment du compte rendu ; arbre applicatif propre, aucune modification non commitée sur le code).
+- **Durée** : `./dev build` 5,7 s (rc 0) ; `./dev deploy dev` 11 s (rc 0) ; `./dev policies` rc 0.
+- **Étape 1 — build** : OK. Images `devenv/app:dev`, `devenv/client:dev`, `devenv/runner:dev`, `devenv/app:service` construites.
+- **Étape 2 — deploy dev (sans reset)** : OK, « Mise en service (dev) OK en 11 s — http://10.77.0.25:8080/ ». Migrate et seed exécutés (seed : compte administrateur existant, inchangé ; profil administrateur actif).
+- **Étape 3 — policies** : **33 respectées, 0 violée, 0 non applicable** (conforme à l'attendu). Les contrôles **36** (`36-front-bundle-servi-egal-source`, bundle servi = sha256 de `/build-sha256.txt`) et **37** (`37-gw-cache-et-entetes`, `Cache-Control: no-cache` sur 7 chemins) sont **respectés**. Résultats : `iterations/002/policies/results.json`.
+- **Étape 4 — empreinte servie** (`http://10.77.0.25:8080`) :
+  - `/app.js` : md5 servi **4eb8c08e9af484992a63298ad56423c8**, identique à l'attendu. sha256 réel `8aa9d77d4b5cee2a8594f2e10ce0014c82c5ac7d6ef3bb54bf2c2020038e75ba`.
+  - `/build-sha256.txt` : HTTP 200, `Content-Type: text/plain`, `Cache-Control: no-cache`. Contenu : `app.js` = `8aa9d77d…75ba` (= sha256 réel) ; `vendor/supabase.js` = `80a218af…7feb` (= sha256 réel, md5 réel `bf039aec5d71910d85178a7c17a1e45f`).
+  - Empreinte de `/app.js` **non modifiée** par rapport à l'attendu : pas d'arrêt.
+- **Étape 5 — santé et non-intervention** :
+  - Pile dev : `devenv-db-1` healthy (inchangé, démarré 12:29:24) ; `devenv-auth-1` healthy (inchangé, 12:29:29) ; `devenv-rest-1` running (inchangé, 12:29:36) ; `devenv-app-1` healthy (recréé par le déploiement, id `f9a5fd8b1b33`, démarré 15:55:47) ; `devenv-client-1` running (recréé, id `595560e1812…`, démarré 15:55:54). Les conteneurs recréés sont attendus de la mise en service et ne sont pas des incidents.
+  - Pile service (inchangée, comparée à la référence relevée avant le déploiement) : `dnum-service-db-1` (`6daabc1a1438`, 13:33:40, healthy) ; `dnum-service-app-1` (`cf6fa21211ba`, 13:33:52, healthy) ; `dnum-service-auth-1` (`37969c515ed5`, 13:34:21, healthy) ; `dnum-service-rest-1` (`a37d681cdfc6`, 13:34:21, running). **Mêmes identifiants, mêmes heures de démarrage, mêmes statuts.**
+- **URL** : http://10.77.0.25:8080/ (réponse `/rest/v1/` = 200).
+- **Incidents** : aucun. Les étapes 1 à 5 ont abouti sans contournement.
+
+## Confidentialité
+
+Aucun secret, adresse électronique ni nom dans cette section. Les valeurs de secrets (`.devenv/secrets/`) ne sont pas reproduites ; les identifiants de conteneurs sont des identifiants Docker publics de la machine.
