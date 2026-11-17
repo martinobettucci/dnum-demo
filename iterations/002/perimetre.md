@@ -278,3 +278,16 @@ que l'hôte seul peut faire : elles ne sont pas des critères fonctionnels et ne
 - Adresse LAN dynamique : la stabilité de `10.77.0.25` (bail DHCP, risque R3) est une action du responsable applicatif
   avant le premier `deploy service`, pas une story.
 - Les stories Could non réalisées (US-15, US-16) sont reportées à l'itération 003 sans bloquer la recette.
+
+## 6. Report / backlog de l'itération 003 (tour 2, décision du chef de projet)
+
+Ces deux points ne sont **pas** réalisés dans l'itération 002. Ils sont inscrits au backlog de l'itération 003 :
+
+- **BL-003-1 — Monter `supabase-js` à une version embarquant `auth-js` ≥ 2.70.0.**
+  Corrige GHSA-8r88-6cj9-9fh5 / CVE-2025-48370. Périmètre : mise à jour de la dépendance, puis **recette
+  d'authentification** (inscription, connexion, activation, accès refusé aux comptes non activés : CA-002-4 à
+  CA-002-12 et CA-002-31 rejoués) et **amendement de SPEC-001.8(b)** par l'architecte, à la charge de la boucle 003.
+- **BL-003-2 — Monter `esbuild` à 0.28.x.** Corrige GHSA-67mh-4wv8-2f99. Vérification : contrôle [P] de la
+  version résolue dans le lockfile, et build de l'application vert ([T]).
+
+Ces points ne modifient ni le périmètre fonctionnel de la boucle 002 ni son objectif (§ 1).

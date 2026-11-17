@@ -9,6 +9,7 @@
 - Pile non démarrée ⇒ tous les tests sont « skip » (SPEC-006 §1).
 """
 import base64, json, os, pathlib, uuid
+from urllib.parse import urlsplit
 
 import pytest
 import requests
@@ -24,6 +25,34 @@ MOT_DE_PASSE_TEST = "Test-" + uuid.uuid4().hex[:16]  # propre à la session, jam
 def pytest_configure(config):
     config.addinivalue_line("markers", "spec(id): identifiant de la spécification couverte")
     config.addinivalue_line("markers", "could: exigence « Could » (non bloquante pour la recette)")
+
+
+# --------------------------------------------------------------------------- débit (SPEC-001.14, ADR-006 §1)
+# Plafond d'inscriptions par passe de `./dev test` (SPEC-006 §1) : au-delà, saisir l'architecte.
+PLAFOND_INSCRIPTIONS_PAR_PASSE = 220
+
+# Relevé de toutes les réponses reçues de /auth/v1/* pendant la passe : (méthode, chemin, statut).
+# Alimenté par l'encapsulation de Session.send : couvre aussi les appels directs de requests.
+RELEVES_AUTH = []
+
+_send_original = requests.sessions.Session.send
+
+
+def _send_releve(self, request, **kwargs):
+    reponse = _send_original(self, request, **kwargs)
+    chemin = urlsplit(request.url).path
+    if chemin.startswith("/auth/v1/"):
+        RELEVES_AUTH.append((request.method, chemin, reponse.status_code))
+    return reponse
+
+
+requests.sessions.Session.send = _send_releve
+
+
+def pytest_collection_modifyitems(config, items):
+    """test_aucune_reponse_429 doit voir les réponses de toutes les autres suites : il s'exécute en dernier."""
+    dernier = [i for i in items if i.name == "test_aucune_reponse_429"]
+    items[:] = [i for i in items if i not in dernier] + dernier
 
 
 # --------------------------------------------------------------------------- pile démarrée ?

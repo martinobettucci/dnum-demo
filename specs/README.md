@@ -4,12 +4,12 @@
 | Id | Titre | Itération | CA couverts | Statut |
 |---|---|---|---|---|
 | SPEC-000 | Socle de l'environnement | 001 | — | actif |
-| SPEC-001 | Pile Supabase auto-hébergée et passerelle unique | 002 | CA-002-1, 2, 3, 6, 7, 11, 33 | actif (amendé tour 1 complément : 001.3, 001.4, 001.11 ; tour 2 : 001.15 nouvelle, puis (b) et (d) et policy n° 25, arbitrage 2026-11-17) |
+| SPEC-001 | Pile Supabase auto-hébergée et passerelle unique | 002 | CA-002-1, 2, 3, 6, 7, 11, 33 | actif (amendé tour 1 complément : 001.3, 001.4, 001.11 ; tour 2 : 001.15 nouvelle, puis (b) et (d) et policy n° 25, arbitrage 2026-11-17 ; décision 2026-11-17 : 001.15 (d) amendé, (e) ajouté, policy n° 28) |
 | SPEC-002 | Modèle de données, RLS, charge projetée, entraide | 002 | CA-002-4, 6, 8 à 36 | actif |
 | SPEC-003 | Compte administrateur initial et secrets | 002 | CA-002-2, 4, 5, 33 | actif (amendé : 003.9 passe en `[T]`) |
 | SPEC-004 | Piles dev / service, persistance, sauvegarde, contrat `./dev` | 002 | CA-002-1, 2, 33, 36 | actif (amendé tour 1 complément : 004.7 à 004.10, 004.16 ; tour 2 : 004.7 restart (ADR-009), 004.11 env_file longue, 004.17 nouvelle ; tour 2 complément : renommage `secrets.py` → `gen_secrets.py`) |
 | SPEC-005 | Interface web (recette clavier/souris) | 002 | CA-002 [C] | actif |
-| SPEC-006 | Plan de vérification (test / client / policy / RA) | 002 | CA-002-1 à 36 | actif (amendé : §1, §2, §3, §5 ; tour 2 : §2, §3 ; arbitrage 2026-11-17 : CA-002-1 (c) en [P], CA-002-9 avec 005.61, policies renumérotées n° 25 à 27) |
+| SPEC-006 | Plan de vérification (test / client / policy / RA) | 002 | CA-002-1 à 36 | actif (amendé : §1, §2, §3, §5 ; tour 2 : §2, §3 ; arbitrage 2026-11-17 : CA-002-1 (c) en [P], CA-002-9 avec 005.61, policies renumérotées n° 25 à 27 ; décision 2026-11-17 : §2 CA-002-2, §3 policy n° 28) |
 
 ## Décisions d'architecture
 | Id | Titre | Statut |
@@ -24,7 +24,7 @@
 | ADR-007 | Publication des ports : une seule adresse LAN par pile (`${APP_LAN_IP}:${APP_PORT}`), runner hors LAN | accepté ; **dérogation CA-002-1 validée par le PO** (perimetre.md, D1) |
 | ADR-008 | Tags des images construites localement, propres à chaque pile (`:dev`, `:service`) | accepté |
 | ADR-009 | Redémarrage automatique de toute la pile service (db, auth, rest, app) | accepté (tour 2) ; policy n° 26 |
-| ADR-010 | Vulnérabilités npm transitives de `app/web` : évaluation et décision | **accepté, partiellement tranché** (arbitrage 2026-11-17) : esbuild GHSA-67mh-4wv8-2f99 = cas A, non bloquant ; auth-js GHSA-8r88-6cj9-9fh5 = cas C provisoire, **bloquant pour `deploy service` uniquement** ; policy n° 25 |
+| ADR-010 | Vulnérabilités npm transitives de `app/web` : évaluation et décision | **accepté, tranché** (décision 2026-11-17) : esbuild GHSA-67mh-4wv8-2f99 = cas A, non bloquant ; auth-js GHSA-8r88-6cj9-9fh5 = cas A (voie 1), **blocage `deploy service` levé** sous condition de la policy n° 28 ; policies n° 25 et 28 |
 
 Notes :
 - SPEC-000.1 reste valable (`/` répond 200) ; la publication du port est désormais précisée par ADR-007
@@ -99,9 +99,9 @@ Décisions :
 Fichiers modifiés : `specs/adr/ADR-010-vulnerabilites-npm-front.md`, `specs/SPEC-001-pile-supabase.md` (SPEC-001.15),
 `specs/SPEC-006-plan-verification.md` (§2, §3), `specs/adr/ADR-009-redemarrage-pile-service.md` (référence de policy), `specs/README.md`.
 
-**Points ouverts** :
-1. **Chef de projet** : lire GHSA-8r88-6cj9-9fh5 et indiquer le module et la fonction visés (voie 1), ou choisir la voie 2 ou 3.
-   Tant que ce point n'est pas levé, `CA-002-36` (pile service) reste **non confirmé**.
+**Points ouverts** (état du tour 2 avant la décision ci-dessous) :
+1. ~~**Chef de projet** : lire GHSA-8r88-6cj9-9fh5 et indiquer le module et la fonction visés (voie 1), ou choisir la voie 2 ou 3.~~
+   Traité (décision 2026-11-17, voie 1). `CA-002-36` (pile service) n'est plus bloqué par auth-js.
 2. **Chef de projet** : inscrire la montée d'esbuild 0.28.2 au périmètre de l'itération 003 (recommandé).
 3. **Policy** : écrire et exécuter la policy n° 25 (identifiants, metafile C2, recherche `serve`/`watch`/`context(`), dans `iterations/002/policies/`.
    Attention : `policy` doit utiliser le numéro 25 réservé, et non 13.
@@ -110,3 +110,23 @@ Fichiers modifiés : `specs/adr/ADR-010-vulnerabilites-npm-front.md`, `specs/SPE
    rejoue le relevé pour une preuve unique.
 6. **Montée supabase-js** : si la voie 2 est choisie, amender SPEC-001.8 (b), SPEC-006 §3 item 2, ADR-002 et la policy 2 (version 2.47.10 écrite en dur).
 7. **C3** (non-ouverture de WebSocket) et **C2** (metafile reproduit) : toujours non faits ; C3 n'est nécessaire que pour `realtime-js` en B conditionnel.
+
+## Décision du chef de projet sur ADR-010 (tour 2, 2026-11-17) — voie 1 retenue
+
+- **auth-js (GHSA-8r88-6cj9-9fh5, CVE-2025-48370, CWE-22, CVSS v4 2,7, ≤ 2.69.1, corrigé en 2.70.0)** : passe du cas C provisoire
+  au **cas A** (non applicable, accepté). Fonctions visées : `auth.admin.getUserById`, `deleteUser`, `updateUserById`,
+  `auth.mfa.listFactors`, `deleteFactor`. `app.js` n'appelle que `getSession`, `signInWithPassword`, `signUp`, `signOut`, et le
+  front n'a pas la clé `service_role`. **Blocage de `./dev deploy service` levé**, sous condition de la **policy n° 28
+  `FRONT-auth-js-non-appel`** (SPEC-001.15 (e), SPEC-006 §3) : aucune occurrence de `.admin.`, `getUserById`, `updateUserById`,
+  `deleteUser`, `listFactors`, `deleteFactor` dans `app/web/src`.
+- Réserve : la policy 28 ne couvre pas le bundle `vendor/supabase.js` ; la preuve C2 (metafile) reste à compléter (ADR-010).
+- **SPEC-001.15** : (d) amendé (plus de cas C), (e) ajouté. **SPEC-006 §2** : CA-002-2 renvoie à la policy 28. **SPEC-006 §3** : policy 28.
+- **CA-002-36** (pile service) : confirmable après exécution réussie de la policy 28 et du `deploy service` (SPEC-006 §2).
+- Numéro **28** attribué à `FRONT-auth-js-non-appel` (libre au 2026-11-17).
+
+**Itération 003** (à inscrire au périmètre) : montée de `@supabase/supabase-js` vers une version dont auth-js est **≥ 2.70.0**
+(version exacte à fixer, nouvelle décision ; amendements SPEC-001.8 (b), SPEC-006 §3 item 2, ADR-002, policy 2) et montée
+d'esbuild vers **0.28.x** (majeure, `build.mjs` et metafile à revalider).
+
+Fichiers modifiés : `specs/adr/ADR-010-vulnerabilites-npm-front.md`, `specs/SPEC-001-pile-supabase.md` (SPEC-001.15),
+`specs/SPEC-006-plan-verification.md` (§2 CA-002-2, §3 policy 28), `specs/README.md`.

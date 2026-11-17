@@ -1,10 +1,11 @@
-"""SPEC-001 — Pile Supabase auto-hébergée et passerelle unique (CA-002-1, 2, 3, 6, 7, 11)."""
-import re, uuid
+"""SPEC-001 — Pile Supabase auto-hébergée et passerelle unique (CA-002-1, 2, 3, 6, 7, 11, 33)."""
+import collections, re, uuid
 
 import pytest
 import requests
 
-from conftest import APP_URL, TIMEOUT, compte_admin, email_unique, login, signup
+from conftest import (APP_URL, MOT_DE_PASSE_TEST, PILE, PLAFOND_INSCRIPTIONS_PAR_PASSE, RELEVES_AUTH, TIMEOUT,
+                      compte_admin, email_unique, jwt_payload, login, signup)
 
 FICHIERS_SERVIS = ["/", "/app.js", "/config.js", "/style.css"]
 JWT_RE = re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+")
@@ -161,3 +162,40 @@ def test_schema_private_non_accessible_par_profil(admin):
 def test_objets_du_schema_presents_via_api(admin, objet):
     r = admin.get(objet, params={"limit": 1})
     assert r.status_code == 200, f"{objet} → {r.status_code} {r.text[:200]}"
+
+
+# --- SPEC-001.14 : débit de la pile dev (ADR-006 §1) ------------------------------------------
+NB_INSCRIPTIONS_RAFALE = 20
+
+
+@pytest.mark.spec("SPEC-001.14")
+def test_inscriptions_en_rafale(anon_key, fabrique):
+    """20 inscriptions consécutives → 20 × 200 avec session immédiate. Comptes @test.invalid,
+    réactivés en fin de test pour ne pas rester dans « Comptes en attente » (recette)."""
+    if PILE == "service":
+        pytest.skip("SPEC-003.9 : aucun compte de test dans la pile service")
+    uids, echecs = [], []
+    try:
+        for i in range(1, NB_INSCRIPTIONS_RAFALE + 1):
+            r = signup(anon_key, email_unique(), MOT_DE_PASSE_TEST, f"Rafale {i}")
+            if r.status_code not in (200, 201) or not r.json().get("access_token"):
+                echecs.append(f"inscription {i} → {r.status_code} {r.text[:120]}")
+                break  # inutile de continuer après un refus (et de solliciter encore le débit)
+            uids.append(jwt_payload(r.json()["access_token"])["sub"])
+    finally:
+        for uid in uids:
+            fabrique.activer(uid)
+    assert not echecs, "; ".join(echecs)
+    assert len(uids) == NB_INSCRIPTIONS_RAFALE, f"{len(uids)} inscriptions réussies sur {NB_INSCRIPTIONS_RAFALE}"
+
+
+@pytest.mark.spec("SPEC-001.14")
+def test_aucune_reponse_429():
+    """Aucune réponse 429 de /auth/v1/* pendant la passe, et au plus PLAFOND_INSCRIPTIONS_PAR_PASSE
+    inscriptions (SPEC-006 §1). Exécuté en dernier (conftest.pytest_collection_modifyitems)."""
+    trop = [(m, c) for (m, c, s) in RELEVES_AUTH if s == 429]
+    assert not trop, f"{len(trop)} réponse(s) 429 sur /auth/v1/ : {dict(collections.Counter(trop))}"
+    inscriptions = sum(1 for (m, c, _) in RELEVES_AUTH if m == "POST" and c == "/auth/v1/signup")
+    assert inscriptions <= PLAFOND_INSCRIPTIONS_PAR_PASSE, (
+        f"{inscriptions} inscriptions dans la passe > plafond {PLAFOND_INSCRIPTIONS_PAR_PASSE} : "
+        "saisir l'architecte (SPEC-006 §1)")

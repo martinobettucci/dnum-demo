@@ -13,6 +13,9 @@ Couvre tous les CA-002-1 à CA-002-36. Chaque CA a au moins un mécanisme de vé
 > CA-002-1 (c) passe en [P] (policy n° 27 `DEV-sortie-url`) ; **collision de numéros corrigée** : les policies
 > `STACK-restart-service`, `FRONT-audit-npm` et `DEV-sortie-url` deviennent les n° **26, 25 et 27** (ex-12, 13, 14, qui
 > collisionnaient avec `12-gw-relais-rest.sh`, `13-gw-admin-bloque.sh` et `14-gw-csp.sh`). Décision ADR-010 (cas A et C).
+>
+> **Décision tour 2 (chef de projet, 2026-11-17, ADR-010 voie 1)** : §2 (CA-002-2) et §3 **policy n° 28 `FRONT-auth-js-non-appel`**
+> ajoutée après les 25, 26 et 27 : condition de `./dev deploy service` (SPEC-001.15 (e)). auth-js passe en cas A.
 
 ## 1. Conditions d'exécution des tests automatiques (`testeur`)
 - Exécution : `./dev test` (conteneur `runner`, réseau de la pile dev). Base : `APP_URL=http://app`.
@@ -40,7 +43,7 @@ Couvre tous les CA-002-1 à CA-002-36. Chaque CA a au moins un mécanisme de vé
 | CA | Specs | [T] testeur | [C] client | [P] / [R] |
 |---|---|---|---|---|
 | CA-002-1 | 001.1/3/4/5/13, 004.1/2/4/7/10/11/17 | `GET $APP_URL/` 200 ; santé auth/rest | — | [P] (a) publication LAN seule (001.3, `STACK-ports-lan`) ; **(c) `./dev` sans `127.0.0.1` (004.17, policy n° 27 `DEV-sortie-url`)**. [R] (a) `curl -sI http://10.77.0.25:8080/` → 200 (dev ; `:8081` pour service) et (b) `ss -ltn` : `10.77.0.25:<APP_PORT>` seul, sans `127.0.0.1` ni `0.0.0.0`, consignés dans `mise-en-service.md`. **Dérogation** : `127.0.0.1` n'est plus vérifié (ADR-007). |
-| CA-002-2 | 001.2/10/15, 003.2/3/6, 004.5, 004.16 | signature des clés ; `service_role` absente des fichiers servis | — | [P] images épinglées (FROM + `image:`), tags par pile (004.16), versions npm exactes, secrets absents des fichiers suivis |
+| CA-002-2 | 001.2/10/15, 003.2/3/6, 004.5, 004.16 | signature des clés ; `service_role` absente des fichiers servis | — | [P] images épinglées (FROM + `image:`), tags par pile (004.16), versions npm exactes, secrets absents des fichiers suivis ; [P] `FRONT-auth-js-non-appel` (policy 28, SPEC-001.15 (e)) |
 | CA-002-3 | 001.6/7/8/9/10 | relais `/auth/v1`, `/rest/v1` ; 403 `/auth/v1/admin` ; CSP ; aucune URL d'autre port dans les fichiers servis | — (implicite : tout marche sur le seul port) | [P] seul `app` publie un port |
 | CA-002-4 | 003.1/4/5/7/9 | connexion admin, `my_status`, unicité du compte, longueur du mot de passe, seul `ADMIN_EMAIL` hors `@test.invalid` | — | [R] transmission hors fichier |
 | CA-002-5 | 003.8, 005.14/61 | — | connexion admin ⇒ tableau de bord + « Administration » ; membre ⇒ absente | — |
@@ -91,6 +94,7 @@ Couvre tous les CA-002-1 à CA-002-36. Chaque CA a au moins un mécanisme de vé
 12. **(n° 26, ex-12 : collision avec `12-gw-relais-rest.sh`)** `STACK-restart-service` (statique, SPEC-004.7, ADR-009) : `docker compose -f stack/compose.yml -f stack/compose.service.yml config` ; `restart` = `unless-stopped` pour `db`, `auth`, `rest`, `app` ; aucune politique pour `migrate`, `seed`, `runner`, `client` ; aucune politique `restart` dans la configuration de la pile `dev` (`stack/compose.yml` seul).
 13. **(n° 25, ex-13 : collision avec `13-gw-admin-bloque.sh`)** `FRONT-audit-npm` (SPEC-001.15, ADR-010) : `npm audit --json` sur `app/web/package-lock.json` dans l'image `node:22.12.0-alpine` (conteneur jetable, pas d'outil sur l'hôte) ; échec si un identifiant d'avis n'est pas listé dans ADR-010 (attendus : `GHSA-67mh-4wv8-2f99`, `GHSA-8r88-6cj9-9fh5`), si un avis est de sévérité haute ou critique, ou si la commande n'a pu se connecter au registre (statut « non exécutée », jamais « réussie »). Contrôles complémentaires (non bloquants) : recherche de `serve`, `watch`, `context(` dans `app/web/build.mjs` (ADR-010, cas A) ; présence de `meta/vendor-metafile.json` après `./dev build` (C2).
 14. **(n° 27, ex-14 : collision avec `14-gw-csp.sh`)** `DEV-sortie-url` (statique, SPEC-004.17) : `grep -nE '127\.0\.0\.1|localhost|0\.0\.0\.0' dev` ne retourne rien ; `dev` exporte `APP_LAN_IP` sur la même ligne que `APP_PORT`.
+15. **(n° 28, nouvelle, décision tour 2 sur ADR-010 voie 1)** `FRONT-auth-js-non-appel` (statique, SPEC-001.15 (e)) : `grep -rnE '\.admin\.|getUserById|updateUserById|deleteUser|listFactors|deleteFactor' app/web/src` ne retourne aucune ligne. Échec si une occurrence existe ; statut « non exécutée » si la recherche ne peut pas être menée (jamais « réussie »). Résultat consigné dans `iterations/002/policies/` et exigé avant `./dev deploy service`. Hors périmètre : bundle `vendor/supabase.js` (ADR-010, réserve de portée).
 
 ## 4. Ordre de recette client conseillé
 Connexion admin (CA-5) → inscription A et B + erreurs (CA-6, 7) → connexion A non activé (CA-10)
