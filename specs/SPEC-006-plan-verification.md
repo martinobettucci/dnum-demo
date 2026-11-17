@@ -8,6 +8,11 @@ Couvre tous les CA-002-1 à CA-002-36. Chaque CA a au moins un mécanisme de vé
 > **Amendements tour 2 (2026-11-17)** : §2 (CA-002-1, CA-002-2, CA-002-36) ; §3 policy 9 (`env_file` longue,
 > `required: false`) ; §3 policies 12 à 14 nouvelles (ADR-009, ADR-010, SPEC-004.17). Les policies sont à écrire
 > par l'agent `policy` avant l'action (boucle AOPR).
+>
+> **Arbitrages tour 2 (chef de projet, 2026-11-17)** : CA-002-9 reste [C] + [T] (SPEC-005.61 ajouté à sa ligne) ;
+> CA-002-1 (c) passe en [P] (policy n° 27 `DEV-sortie-url`) ; **collision de numéros corrigée** : les policies
+> `STACK-restart-service`, `FRONT-audit-npm` et `DEV-sortie-url` deviennent les n° **26, 25 et 27** (ex-12, 13, 14, qui
+> collisionnaient avec `12-gw-relais-rest.sh`, `13-gw-admin-bloque.sh` et `14-gw-csp.sh`). Décision ADR-010 (cas A et C).
 
 ## 1. Conditions d'exécution des tests automatiques (`testeur`)
 - Exécution : `./dev test` (conteneur `runner`, réseau de la pile dev). Base : `APP_URL=http://app`.
@@ -34,7 +39,7 @@ Couvre tous les CA-002-1 à CA-002-36. Chaque CA a au moins un mécanisme de vé
 
 | CA | Specs | [T] testeur | [C] client | [P] / [R] |
 |---|---|---|---|---|
-| CA-002-1 | 001.1/3/4/5/13, 004.1/2/4/7/10/11/17 | `GET $APP_URL/` 200 ; santé auth/rest | — | [P] publication LAN seule (001.3) ; [R] `curl -sI http://10.77.0.25:8080/` (dev) et `:8081` (service), `mise-en-service.md`. **Dérogation** : `127.0.0.1` n'est plus vérifié (ADR-007). |
+| CA-002-1 | 001.1/3/4/5/13, 004.1/2/4/7/10/11/17 | `GET $APP_URL/` 200 ; santé auth/rest | — | [P] (a) publication LAN seule (001.3, `STACK-ports-lan`) ; **(c) `./dev` sans `127.0.0.1` (004.17, policy n° 27 `DEV-sortie-url`)**. [R] (a) `curl -sI http://10.77.0.25:8080/` → 200 (dev ; `:8081` pour service) et (b) `ss -ltn` : `10.77.0.25:<APP_PORT>` seul, sans `127.0.0.1` ni `0.0.0.0`, consignés dans `mise-en-service.md`. **Dérogation** : `127.0.0.1` n'est plus vérifié (ADR-007). |
 | CA-002-2 | 001.2/10/15, 003.2/3/6, 004.5, 004.16 | signature des clés ; `service_role` absente des fichiers servis | — | [P] images épinglées (FROM + `image:`), tags par pile (004.16), versions npm exactes, secrets absents des fichiers suivis |
 | CA-002-3 | 001.6/7/8/9/10 | relais `/auth/v1`, `/rest/v1` ; 403 `/auth/v1/admin` ; CSP ; aucune URL d'autre port dans les fichiers servis | — (implicite : tout marche sur le seul port) | [P] seul `app` publie un port |
 | CA-002-4 | 003.1/4/5/7/9 | connexion admin, `my_status`, unicité du compte, longueur du mot de passe, seul `ADMIN_EMAIL` hors `@test.invalid` | — | [R] transmission hors fichier |
@@ -42,7 +47,7 @@ Couvre tous les CA-002-1 à CA-002-36. Chaque CA a au moins un mécanisme de vé
 | CA-002-6 | 002.4, 001.11, 005.11 | signup ⇒ profil inactif | formulaire + message d'attente | — |
 | CA-002-7 | 001.11, 005.11 | e-mail dupliqué ⇒ 4xx ; mot de passe 7 car. ⇒ 422 | messages d'erreur, pas de compte | — |
 | CA-002-8 | 002.4/5, 005.60 | `admin_list_accounts` / `admin_set_active` | clic « Activer » ⇒ ligne déplacée | — |
-| CA-002-9 | 002.5 | membre ⇒ `admin_set_active` refusé, `PATCH profiles` sans effet | `#/admin` inaccessible | — |
+| CA-002-9 | 002.5, 005.61 | membre ⇒ `admin_set_active` refusé, `PATCH profiles` sans effet | `#/admin` saisi à la main ⇒ redirection, aucune donnée d'administration | — |
 | CA-002-10 | 002.3, 005.12 | `my_status` inactif | écran d'attente seul | — |
 | CA-002-11 | 002.1/2/3, 001.12 | anon et inactif : 0 ligne / refus sur les 4 tables + vues + RPC, aucune écriture | — | [P] RLS forcée, aucun privilège `anon` |
 | CA-002-12 | 002.6, 005.13 | nouveau jeton après activation voit les données | reconnexion ⇒ tableau de bord | — |
@@ -69,7 +74,7 @@ Couvre tous les CA-002-1 à CA-002-36. Chaque CA a au moins un mécanisme de vé
 | CA-002-33 | 004.3, 003.5 | écrire → redéploiement (R) → relire ; mot de passe admin inchangé | — | [R] `./dev deploy` sans reset entre les deux passes |
 | CA-002-34 (Could) | 002.20, 005.60 | désactivation, auto-désactivation refusée | « Désactiver » ⇒ écran d'attente | — |
 | CA-002-35 (Could) | 002.21, 005.21 | filtre `due_date` | filtre « Aujourd'hui » | — |
-| CA-002-36 | 004.7/8/9/16 | backup → reset → restore → relecture (`DEVENV_PILE=service`) | — | [P] `STACK-restart-service` (ADR-009) ; [R] isolation des piles (`docker compose ls`, `docker volume ls`, tags distincts) ; [R] `docker inspect` : `unless-stopped` sur db, auth, rest, app |
+| CA-002-36 | 004.7/8/9/16 | backup → reset → restore → relecture (`DEVENV_PILE=service`) | — | [P] `STACK-restart-service` (n° 26, ADR-009) ; [R] isolation des piles (`docker compose ls`, `docker volume ls`, tags distincts) ; [R] `docker inspect` : `unless-stopped` sur db, auth, rest, app |
 
 ## 3. Policies attendues (à écrire par l'agent `policy`, avant l'action)
 1. Images épinglées : `FROM` **et** `image:` de `stack/*.yml` (tag exact, pas `latest`).
@@ -83,9 +88,9 @@ Couvre tous les CA-002-1 à CA-002-36. Chaque CA a au moins un mécanisme de vé
 9. `STACK-points-accroche` (statique, SPEC-004.11, 004.13 et 004.14) : services `migrate` et `seed` (profil, image, montages, `env_file` en forme longue `- path: ${DEVENV_SECRETS}` avec `required: false`), healthchecks de `db`, `auth` et `app`, volume `db-data`. Vérification par `docker compose config` ou par analyse YAML de `stack/compose.yml`.
 10. `DB-migrations-versionnees` (n° 22) étendue selon SPEC-004.12 : nommage `NNN_[a-z0-9_]+.sql`, versions uniques, aucune instruction de transaction de premier niveau, aucun `CONCURRENTLY`.
 11. `STACK-tags-par-pile` (statique, SPEC-004.16, ADR-008) : chaque `image:` construit de `stack/compose.yml` porte le tag `:dev` ; celui de `stack/compose.service.yml` porte `:service` ; aucune paire `nom:tag` commune aux deux fichiers.
-12. `STACK-restart-service` (statique, SPEC-004.7, ADR-009) : `docker compose -f stack/compose.yml -f stack/compose.service.yml config` ; `restart` = `unless-stopped` pour `db`, `auth`, `rest`, `app` ; aucune politique pour `migrate`, `seed`, `runner`, `client` ; aucune politique `restart` dans la configuration de la pile `dev` (`stack/compose.yml` seul).
-13. `FRONT-audit-npm` (SPEC-001.15, ADR-010) : `npm audit --json` sur `app/web/package-lock.json` dans l'image `node:22.12.0-alpine` (conteneur jetable, pas d'outil sur l'hôte) ; échec si un identifiant d'avis n'est pas listé dans ADR-010, si un avis est de sévérité haute ou critique, ou si la commande n'a pu se connecter au registre (statut « non exécutée », jamais « réussie »).
-14. `DEV-sortie-url` (statique, SPEC-004.17) : `grep -nE '127\.0\.0\.1|localhost|0\.0\.0\.0' dev` ne retourne rien ; `dev` exporte `APP_LAN_IP` sur la même ligne que `APP_PORT`.
+12. **(n° 26, ex-12 : collision avec `12-gw-relais-rest.sh`)** `STACK-restart-service` (statique, SPEC-004.7, ADR-009) : `docker compose -f stack/compose.yml -f stack/compose.service.yml config` ; `restart` = `unless-stopped` pour `db`, `auth`, `rest`, `app` ; aucune politique pour `migrate`, `seed`, `runner`, `client` ; aucune politique `restart` dans la configuration de la pile `dev` (`stack/compose.yml` seul).
+13. **(n° 25, ex-13 : collision avec `13-gw-admin-bloque.sh`)** `FRONT-audit-npm` (SPEC-001.15, ADR-010) : `npm audit --json` sur `app/web/package-lock.json` dans l'image `node:22.12.0-alpine` (conteneur jetable, pas d'outil sur l'hôte) ; échec si un identifiant d'avis n'est pas listé dans ADR-010 (attendus : `GHSA-67mh-4wv8-2f99`, `GHSA-8r88-6cj9-9fh5`), si un avis est de sévérité haute ou critique, ou si la commande n'a pu se connecter au registre (statut « non exécutée », jamais « réussie »). Contrôles complémentaires (non bloquants) : recherche de `serve`, `watch`, `context(` dans `app/web/build.mjs` (ADR-010, cas A) ; présence de `meta/vendor-metafile.json` après `./dev build` (C2).
+14. **(n° 27, ex-14 : collision avec `14-gw-csp.sh`)** `DEV-sortie-url` (statique, SPEC-004.17) : `grep -nE '127\.0\.0\.1|localhost|0\.0\.0\.0' dev` ne retourne rien ; `dev` exporte `APP_LAN_IP` sur la même ligne que `APP_PORT`.
 
 ## 4. Ordre de recette client conseillé
 Connexion admin (CA-5) → inscription A et B + erreurs (CA-6, 7) → connexion A non activé (CA-10)

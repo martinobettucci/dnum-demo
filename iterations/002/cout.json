@@ -2,29 +2,29 @@
   "iteration": "002",
   "debut": "2026-11-17T11:39:13+00:00",
   "fin": null,
-  "duree_min": 19.4,
+  "duree_min": 54.7,
   "par_modele": [
     {
       "modele": "claude-haiku-5-5",
-      "requetes": 1,
+      "requetes": 218,
       "sous_agents": 0,
-      "input": 2,
-      "output": 139,
-      "cache_write": 7043,
-      "cache_read": 0,
-      "cout_usd": 0.001
+      "input": 436,
+      "output": 459855,
+      "cache_write": 1151330,
+      "cache_read": 15028917,
+      "cout_usd": 0.5242
     },
     {
       "modele": "claude-opus-5-5",
-      "requetes": 89,
+      "requetes": 103,
       "sous_agents": 0,
-      "input": 178,
-      "output": 185540,
-      "cache_write": 347211,
-      "cache_read": 4381276,
-      "cout_usd": 6.3238
+      "input": 206,
+      "output": 212543,
+      "cache_write": 405457,
+      "cache_read": 5049029,
+      "cout_usd": 7.2888
     }
   ],
-  "cout_total_usd": 6.3248,
+  "cout_total_usd": 7.813,
   "tarifs": "Tarifs API Anthropic publics en $/MTok, relevés le 2026-11-17. cache_write = 1.25 x input (cache 5 min) ; à vérifier avant tout usage contractuel. Sous abonnement Claude, le coût réel diffère : c'est un équivalent API."
 }

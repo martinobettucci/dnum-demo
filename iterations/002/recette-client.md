@@ -30,6 +30,7 @@
 | CA-002-6 | 2 | CA-002-21 | 6, 12 |
 | CA-002-7 | 3 | CA-002-22 | 12 |
 | CA-002-8 | 5 | CA-002-23 | 13 |
+| CA-002-9 | 6 bis | | |
 | CA-002-10 | 4 | CA-002-24 | 6 |
 | CA-002-12 | 6 | CA-002-25 | 15 |
 | CA-002-13 | 8 | CA-002-27 | 16 |
@@ -91,6 +92,13 @@
    - chaque carte affiche un nom, les tâches non terminées et une charge projetée.
 3. **Attendu** : aucune entrée « Administration » dans le menu (membre ordinaire).
 4. **[capture]** tableau de bord de compte 1 ; **[capture]** menu.
+5. Déconnectez-vous.
+
+### Étape 6 bis — Accès direct à la page d'administration refusé pour un membre (CA-002-9 [C])
+1. Connectez-vous avec **compte 1** (membre activé, arrivée sur le tableau de bord).
+2. Sans utiliser le menu, ouvrez la barre d'adresse (Ctrl+L), saisissez l'adresse de l'application suivie de `#/admin` (ex. `http://app/#/admin`), puis Entrée.
+3. **Attendu** : aucune liste de comptes en attente ni bouton « Activer » n'est affiché. La page est refusée (message d'accès refusé) ou ramène au tableau de bord, sans donnée d'administration.
+4. **[capture]**.
 5. Déconnectez-vous.
 
 ### Étape 7 — Accès de compte 2 après activation (CA-002-12, CA-002-24 côté membre)
@@ -242,6 +250,6 @@ Vérification finale de P2 :
 
 ## 4. Couverture
 
-Les 24 critères [C] de l'itération 002 sont tous couverts par la table du §1 :
-CA-002-5, 6, 7, 8, 10, 12, 13, 14, 15, 17, 18, 19, 21, 22, 23, 24, 25, 27, 28, 29, 30, 32, 34 (Could), 35 (Could).
-Hors recette ici, par construction : CA-002-1, 33, 36 ([R] et [T]) ; CA-002-2, 3, 4, 9, 11, 16, 20, 26, 31 ([T] ou [P]).
+Les 25 critères [C] de l'itération 002 sont tous couverts par la table du §1 :
+CA-002-5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 17, 18, 19, 21, 22, 23, 24, 25, 27, 28, 29, 30, 32, 34 (Could), 35 (Could).
+Hors recette ici, par construction : CA-002-1, 33, 36 ([R] et [T]) ; CA-002-2, 3, 4, 11, 16, 20, 26, 31 ([T] ou [P]).

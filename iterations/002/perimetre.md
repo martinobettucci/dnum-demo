@@ -1,4 +1,4 @@
-# Itération 002 — Périmètre (product owner, 2026-11-17, tour 2 — règle [R] consignée, recette client préparée)
+# Itération 002 — Périmètre (product owner, 2026-11-17, tour 2 — arbitrages du chef de projet intégrés : CA-002-9 en [C]+[T], CA-002-1 (c) en [P])
 
 ## 1. Objectif de la boucle
 
@@ -53,7 +53,7 @@ Le repli ne change pas le périmètre fonctionnel de la boucle.
 
 | CA | Vérification [R] | Preuve à consigner |
 |---|---|---|
-| CA-002-1 | (a) `curl -sI http://10.77.0.25:8080/` → 200 ; (b) `ss -ltn` : `10.77.0.25:8080` seul, sans `127.0.0.1:8080` ni `0.0.0.0:8080` ; (c) la sortie de `./dev deploy` n'affiche aucune URL `127.0.0.1` | sorties brutes de `curl`, `ss -ltn` et `./dev deploy` |
+| CA-002-1 | (a) `curl -sI http://10.77.0.25:8080/` → 200 ; (b) `ss -ltn` : `10.77.0.25:8080` seul, sans `127.0.0.1:8080` ni `0.0.0.0:8080` ; (c) **passé en [P]** (voir « Tranché » ci-dessous) | sorties brutes de `curl` et `ss -ltn` |
 | CA-002-33 | `./dev deploy` **sans** `./dev reset` entre l'écriture de données et leur relecture (le [T] lit avant et après) | horodatages des deux `deploy` |
 | CA-002-36 | (a) `docker compose ls` et `docker volume ls` identiques avant/après `./dev deploy service` pour le projet `devenv` ; (b) `curl -sI http://10.77.0.25:8081/` → 200 ; (c) `./dev reset service` sans `--confirmer-destruction` refusé, rien détruit | sorties brutes avant/après |
 
@@ -77,7 +77,7 @@ Le repli ne change pas le périmètre fonctionnel de la boucle.
 `mise-en-service.md` §1 et §5, **périmée**) : pile dev publiée sur `127.0.0.1:8080` seule, `10.77.0.25` non publié,
 bail DHCP `dynamic`. À reconfirmer après le `deploy` du tour 2.
 
-**Point ouvert** : CA-002-1 (c) est statique (contrôle du texte de `./dev`) et pourrait passer en [P]. Décision du chef de projet.
+**Tranché (tour 2, arbitrage du chef de projet)** : CA-002-1 (c) (absence de `127.0.0.1` dans la sortie de `./dev`) est un contrôle statique du texte de `./dev` ; il passe en **[P]**, exécuté par `./dev policies`. Le [R] de CA-002-1 se limite à (a) et (b).
 
 ## 3. User stories retenues (priorisées, MoSCoW)
 
@@ -141,15 +141,15 @@ Ordre de réalisation des Must : US-1 → US-2 → US-14 → US-3 → US-4 → U
 Conventions : « membre activé » = compte activé par l'admin. **Charge projetée** d'une personne = somme, sur ses
 tâches non terminées, de `max(estimation − temps logué, 0)`, en heures, arrondie à 0,25 h. **Surchargé** = charge
 projetée strictement supérieure à **7 h** (seuil fixe pour cette boucle). [C] = vérifiable par le client au
-clavier/souris ; [T] = vérifiable par test automatique ; [R] = vérification de l'hôte par le responsable applicatif
+clavier/souris ; [T] = vérifiable par test automatique ; [P] = contrôle statique exécuté par `./dev policies` (policies/checks) ; [R] = vérification de l'hôte par le responsable applicatif
 (réseau, processus, `docker`), consignée dans `mise-en-service.md`. Les [R] sont des vérifications d'infrastructure
 que l'hôte seul peut faire : elles ne sont pas des critères fonctionnels et ne remplacent aucun [C] ou [T].
 
 ### US-1 — Socle déployable
-- **CA-002-1** [T] + [R] — *dérogé et validé (D1)*. Après `./dev reset` puis `./dev deploy` : `GET http://app/` depuis
+- **CA-002-1** [T] + [R] + [P] — *dérogé et validé (D1)*. Après `./dev reset` puis `./dev deploy` : `GET http://app/` depuis
   le runner répond `200` ([T]). L'application répond `200` sur `http://10.77.0.25:<APP_PORT>/` (8080 pour `dev`) ;
   `ss -ltn` montre cette adresse seule pour ce port, sans écouteur `127.0.0.1` ni `0.0.0.0` ([R]). La sortie de
-  `./dev` n'affiche aucune URL `127.0.0.1` ([R]). Le runner ne joint pas `10.77.0.25` (ADR-007 §4).
+  `./dev` n'affiche aucune URL `127.0.0.1` ([P]). Le runner ne joint pas `10.77.0.25` (ADR-007 §4).
 - **CA-002-2** [T] + [P] — Toutes les images de la pile sont épinglées par tag exact (aucun `latest`). Les images
   construites portent le tag de leur pile (`devenv/app:dev` pour `dev`, `devenv/app:service` pour `service`,
   ADR-008). Aucun secret (mot de passe, clé JWT, clé de service, JWT) n'est présent dans les fichiers suivis par git.
@@ -176,8 +176,10 @@ que l'hôte seul peut faire : elles ne sont pas des critères fonctionnels et ne
 - **CA-002-8** [C] — Dans « Administration », l'admin voit la liste des comptes en attente (nom, e-mail, date
   d'inscription) et un bouton « Activer » par compte ; après clic, le compte disparaît de la liste des comptes en
   attente et apparaît dans la liste des comptes actifs. *(La recette crée elle-même le compte à activer, via CA-002-6.)*
-- **CA-002-9** [T] — Un membre non administrateur qui tente d'activer un compte (par l'API) reçoit un refus et le
-  compte reste non activé.
+- **CA-002-9** [C] + [T] — Un membre non administrateur ne peut pas activer un compte. [C] : il saisit directement
+  `#/admin` dans la barre d'adresse et n'obtient ni la liste des comptes en attente ni de bouton « Activer »
+  (refus ou retour au tableau de bord). [T] : par l'API, il tente d'activer un compte et reçoit un refus ; le compte
+  reste non activé. *Redondance [C]/[T] acceptée sur la sécurité d'accès (arbitrage du chef de projet, tour 2).*
 
 ### US-5 — Accès refusé aux comptes non activés
 - **CA-002-10** [C] — Un compte inscrit mais non activé qui se connecte ne voit qu'un écran « Compte en attente

@@ -1,7 +1,7 @@
 # ADR-009 — Redémarrage automatique de toute la pile service
 
 Statut : accepté (itération 002, tour 2, 2026-11-17). Amende ADR-004 (surcouche `service`).
-Specs touchées : SPEC-004.7 (amendée), SPEC-006 §2 (CA-002-36) et §3 (policy 12 `STACK-restart-service`).
+Specs touchées : SPEC-004.7 (amendée), SPEC-006 §2 (CA-002-36) et §3 (policy n° 26 `STACK-restart-service`, ex-12 : collision corrigée au tour 2 par arbitrage du chef de projet).
 Recommandation du chef de projet retenue.
 
 ## Contexte

@@ -1,154 +1,149 @@
 # ADR-010 — Vulnérabilités npm transitives de `app/web` : évaluation et décision
 
-Statut : **accepté sous conditions, provisoire** (itération 002, tour 2, mis à jour le 2026-11-17 après la preuve du
-développeur). Specs touchées : SPEC-001.15 (dépendances npm du front), SPEC-006 §3 (policy `FRONT-audit-npm`).
-Complète ADR-002 (dépendances épinglées).
+Statut : **accepté, partiellement tranché** (itération 002, tour 2, arbitrage du chef de projet, 2026-11-17).
 
-**État au 2026-11-17** : la preuve de bundle est obtenue (section « Preuve de bundle »). Le classement par paquet
-est établi pour les paquets Node-only. **Les identifiants des trois avis ne sont toujours pas relevés** : la décision
-reste provisoire tant que la section « Liste des avis » n'est pas complétée.
+- **esbuild** (GHSA-67mh-4wv8-2f99) : **cas A**, accepté, **non bloquant**.
+- **auth-js / supabase-js** (GHSA-8r88-6cj9-9fh5) : **cas C provisoire** (preuve de non-appel absente). **Bloquant pour
+  `./dev deploy service` uniquement** ; non bloquant pour la pile `dev` ni pour la recette `dev` de l'itération 002.
+
+Specs touchées : SPEC-001.15 (d ajouté), SPEC-006 §2 (CA-002-1, CA-002-9, CA-002-36) et §3 (policy n° 25).
+Complète ADR-002 (dépendances épinglées).
 
 ## Contexte
 
-- `app/web/package.json` épingle `@supabase/supabase-js@2.47.10` et `esbuild@0.24.2` ; `package-lock.json` (v3)
-  fige l'arbre complet avec intégrité `sha512` (SPEC-006 §3, policy 2).
-- Un `npm audit` remonte **3 vulnérabilités : 2 faibles et 1 modérée** (signalement du développeur,
-  `iterations/002/journal/120715-developpeur.md`, point 8).
-- **Limite** : les identifiants (GHSA/CVE) des trois avis, leurs paquets et leurs versions de correctif ne sont
-  consignés nulle part dans le dépôt. L'architecte n'exécute aucun outil et ne peut pas relancer l'audit. Le
-  développeur n'a pas non plus le droit de lancer `docker run` : sa tentative `npm audit` dans
-  `node:22.12.0-alpine` a été refusée par le garde-fou (journal `122914-developpeur.md`, point 1).
-- **Paquets de l'arbre concernés par hypothèse** :
-  - runtime navigateur : `@supabase/*` (auth-js 2.67.3, postgrest-js 1.17.7, realtime-js 2.11.2, storage-js 2.7.1,
-    functions-js 2.4.4), `@supabase/node-fetch` 2.6.15 et ses dépendances `whatwg-url` 5.0.0, `tr46` 0.0.3,
-    `webidl-conversions` 3.0.1, `ws` 8.23.0 (dépendance de `realtime-js`) ;
-  - build seulement : `esbuild` 0.24.2 (dépendance **directe** de développement, et non transitive : si elle figure
-    parmi les trois avis, la formulation du contexte est à corriger) ; `@esbuild/*` (binaires optionnels) ;
-  - types seulement : `@types/node` 26.6.6, `@types/ws`, `@types/phoenix`, `undici-types`.
+- **Identifiants** : relevés par le développeur dans `iterations/002/journal/123343-developpeur.md` (sortie
+  `npm audit --json` via le wrapper toolbox). Le journal `122914` indiquait un refus de `docker run` ; le relevé de
+  `123343`, postérieur, est retenu. C'est un relevé, **pas encore une preuve exécutable** : la policy n° 25 doit le rejouer
+  et le consigner dans `iterations/002/policies/` (condition C1).
+- **Texte des avis** : absent du dépôt. `npm audit --json` ne donne que titre, CWE, CVSS, plage et correctif.
+- **Correction de contexte** : `esbuild` est une dépendance **directe de développement** (`devDependencies` de
+  `app/web/package.json`) et figure parmi les avis. Le contexte initial (« non transitive ») ne s'applique qu'à sa nature
+  de dépendance, pas à sa présence dans l'audit.
 
-## Ce qui est livré au navigateur (faits vérifiés)
+| # | Identifiant | Paquet (version de l'arbre) | Dépendance | Sévérité, CVSS, CWE | Plage vulnérable | Correctif | Cas |
+|---|---|---|---|---|---|---|---|
+| 1 | GHSA-67mh-4wv8-2f99 | `esbuild` 0.24.2 | directe, `devDependencies` | modérée, 5.3, CWE-346 | ≤ 0.24.2 | 0.28.2 (**majeure**) | **A** |
+| 2 | GHSA-8r88-6cj9-9fh5 | `@supabase/auth-js` 2.67.3 | transitive de `@supabase/supabase-js` 2.47.10 | faible, CVSS 0, CWE-22 | ≤ 2.69.1 | via `supabase-js` 2.119.0 (pas de majeure, déclaré par npm) | **C provisoire** |
+| — | (entrée npm dérivée de la 2, **pas un identifiant distinct**) | `@supabase/supabase-js` 2.47.10 | directe, `dependencies` | faible | 2.41.1 – 2.49.10 | 2.119.0 | même décision que la 2 |
 
-- `app/Dockerfile` est multi-étapes : `node:22.12.0-alpine` ne sert qu'à construire ; l'image finale est
-  `nginx:1.27.3-alpine` et ne reçoit que `dist/` (`app.js`, `vendor/supabase.js`, `index.html`, `style.css`).
-  **`node_modules`, esbuild et tous les paquets de développement ne sont pas livrés**, et aucun processus Node
-  ne tourne en production.
-- Le bundle `dist/vendor/supabase.js` est minifié (esbuild, `platform` navigateur, `legalComments: none`). Seuls les
-  modules **effectivement importés** par `src/vendor.js` y figurent. Un paquet Node-only n'y figure que sous la forme
-  de son champ `browser` quand esbuild le remplace.
-- La CSP de nginx (`default-src 'self'; connect-src 'self'; script-src 'self'`, SPEC-001.9) interdit au navigateur
-  de se connecter ailleurs que sur la même origine et d'exécuter un script tiers.
-- Le front n'ouvre aucun canal temps réel (SPEC-005, périmètre).
+Un CVSS 0 est la valeur déclarée par la source ; il ne vaut pas preuve d'absence de risque.
 
-## Preuve de bundle (tour 2, développeur)
+## Preuve d'usage — esbuild (cas A)
 
-Source : `iterations/002/journal/122914-developpeur.md`, section ADR-010. Extraction du `metafile` d'esbuild
-(`app/web/build.mjs`, `metafile: true`, écrit dans `meta/vendor-metafile.json`, hors `dist/`, donc hors image). Le
-fichier extrait a été consulté dans `/tmp` puis supprimé ; **la preuve est reproductible par `./dev build`**, et la
-lecture de `meta/vendor-metafile.json` doit être refaite à chaque build (voir Conditions).
+Faits vérifiés (lecture seule, architecte) :
+- `app/Dockerfile`, étape `build` : `npm ci` puis `npm run build`. L'image servie (`nginx:1.27.3-alpine`) ne reçoit que
+  `dist/`. Aucun port n'est exposé par l'étape de build.
+- `app/web/package.json` : `"build": "node build.mjs"`.
+- `app/web/build.mjs` n'utilise que `build()` de l'API esbuild. **Aucune occurrence** de `serve`, `watch`, `context(` ni
+  `createServer` dans `app/` (recherche sur tout le répertoire).
 
-| Paquet | Constat dans le bundle |
-|---|---|
-| `whatwg-url`, `tr46`, `webidl-conversions` | présents dans le lock, **absents du bundle** |
-| `ws` 8.23.0 | **seul `ws/browser.js` est inclus** : c'est un shim qui lève une exception à l'appel. Il est importé dynamiquement par `realtime-js/RealtimeClient.js`. Le `ws` Node n'est pas dans le bundle. |
-| `@supabase/node-fetch` 2.6.15 | **seul `browser.js` est inclus** : c'est un shim qui renvoie le `fetch` global. |
-| `esbuild` | absent du bundle |
-| `app/src/app.js` | n'utilise ni `channel`, ni `subscribe`, ni `realtime`, ni `WebSocket` |
+Analyse : l'avis vise le **serveur de développement** d'esbuild, qui répond à des requêtes HTTP et dont la réponse est
+lisible par un site tiers. Ce serveur n'est **jamais démarré** : ni pendant le build, ni dans l'image livrée. La condition
+d'exposition de l'avis n'est pas réalisée. Classe **A**.
 
-Ce que la preuve établit : le code Node de `whatwg-url`, `tr46`, `webidl-conversions`, `ws` et
-`@supabase/node-fetch` **n'est pas livré au navigateur**. Ce qu'elle n'établit **pas** : que `realtime-js` n'ouvre
-aucune connexion au chargement de `supabase-js` (l'absence de `channel`/`subscribe` dans `app.js` est nécessaire,
-non suffisante). Ce point reste à confirmer (Conditions).
+Réserve : l'ajout de `serve`, `watch` ou `context` dans le build, ou un outil de développement front qui lance esbuild en
+serveur, fait basculer l'avis en **C** et impose une réévaluation. Contrôle recommandé à la policy n° 25 : recherche de ces
+motifs dans `app/web/build.mjs` (non bloquant).
 
-## Évaluation (cas A / B / C de la décision)
+**Montée d'esbuild vers 0.28.2 : à demander au chef de projet pour l'itération 003. Non bloquante.** C'est une version
+majeure : elle se traite comme une nouvelle décision (API de build, `metafile`, `target`, `define`, `legalComments` à
+revalider ; recette : `./dev build` puis `./dev policies`). Le cas A ne la rend pas urgente.
 
-Définitions, inchangées : **A** = le paquet de l'avis n'est pas exécuté par le bundle (absent, build seul, ou remplacé
-par son champ `browser`) ; **B** = il est dans le bundle mais la fonction vulnérable n'est pas atteignable depuis le
-front ; **C** = il est dans le bundle **et** atteignable, ou sévérité haute ou critique.
+## Preuve d'usage — auth-js / supabase-js (cas C provisoire)
 
-Ce tableau est une **règle de pré-classement** : il permet de classer un avis dès que son paquet est connu, sans
-attendre une nouvelle analyse.
+Faits vérifiés (lecture de `app/web/src/app.js`) :
+- Appels d'authentification : `sb.auth.getSession()` (l. 87), `signInWithPassword` (l. 182), `signUp` avec
+  `options.data` (l. 216), `signOut` (l. 163 et 233).
+- Client : `persistSession: true`, `autoRefreshToken: true` (l. 6 à 8) : rafraîchissement automatique du jeton, donc
+  appel interne de auth-js en arrière-plan.
+- Les saisies utilisateur (e-mail, mot de passe, nom affiché) sont passées en **paramètres de corps** d'appel, pas dans
+  un chemin d'URL construit par l'application.
+- `app.js` n'appelle **pas** l'API admin, la MFA, l'OAuth, la réinitialisation de mot de passe, ni `getUserById` /
+  `updateUserById`.
 
-| Paquet visé par l'avis | Constat | Cas | Réserve |
-|---|---|---|---|
-| `whatwg-url`, `tr46`, `webidl-conversions` | absents du bundle (preuve) | **A** | aucune |
-| `esbuild`, `@esbuild/*` | build seul, hors `dist/` | **A** | `@esbuild/*` : à confirmer dans `meta/vendor-metafile.json` |
-| `@types/*`, `undici-types` | types seuls, hors bundle | **A** | à confirmer dans le metafile |
-| `ws` 8.x | seul le shim `ws/browser.js` est livré (exception à l'appel) | **A** (remplacé par champ `browser`, exemple de l'ADR) | si l'avis vise le shim lui-même ou le chemin realtime : réévaluation en **B** |
-| `@supabase/node-fetch` 2.x | seul le shim `browser.js` est livré (`fetch` global) | **A** | idem ci-dessus |
-| `realtime-js` 2.11.2 | présent dans le bundle, importé ; non emprunté par `app.js` | **B conditionnel** | B seulement après preuve qu'aucune WebSocket n'est ouverte au chargement |
-| `auth-js` 2.67.3, `postgrest-js` 1.17.7 | présents, fonctions utilisées par `app.js` (connexion, appels `rest`) | **C** par défaut | B seulement si la fonction vulnérable est prouvée non appelée |
-| `storage-js` 2.7.1, `functions-js` 2.4.4 | présence dans le bundle à confirmer dans le metafile ; non appelés par `app.js` | **B conditionnel** | preuve : metafile + non-appel |
-| `supabase-js` (cœur) | dépend des modules ci-dessus | selon le module touché | — |
+Ce que la preuve **n'établit pas** :
+- Le texte de GHSA-8r88-6cj9-9fh5 n'est pas dans le dépôt : on ignore le **module et la fonction** visés. Le titre
+  « Insecure Path Routing from Malformed User Input » (CWE-22) évoque une construction de chemin à partir d'une entrée non
+  filtrée. Si la fonction visée prend un identifiant dans le chemin (type admin ou MFA), elle n'est pas appelée. Si elle
+  fait partie de `signInWithPassword`, `signUp`, `getSession`, `signOut` ou du rafraîchissement, elle est atteignable. On ne
+  peut pas trancher sans le texte.
+- Le code de `@supabase/auth-js` 2.67.3 n'a pas été lu (`node_modules` absent du dépôt).
 
-Pour les trois avis actuels, la sévérité est « faible » ou « modérée » : **aucun n'est classé à ce jour**, faute
-d'identifiant. Si l'un d'eux porte sur `auth-js` ou `postgrest-js` sans preuve de non-appel, il est de **cas C** et
-bloque (Décision 3).
+**Classement : C provisoire.** La règle de pré-classement fait de auth-js un cas C sauf preuve de non-appel. Ce n'est pas
+une présomption d'exploitabilité : c'est l'absence de preuve.
+
+**Portée du blocage** : la pile `dev` est jetable, réservée à l'équipe, et déjà en service (`mise-en-service.md`). La pile
+`service` est destinée à être exposée (US-17). Le blocage ne porte donc que sur `./dev deploy service` (ADR-010 §3). La
+recette `dev` de l'itération 002 n'est pas bloquée. CA-002-36 reste **non confirmé** tant que le blocage n'est pas levé.
+
+**Levée** : une des trois voies, consignée dans cet ADR avant tout `deploy service`.
+
+1. **Voie 1 — preuve de non-appel, classement B** (recommandée, coût faible).
+   (a) Le chef de projet lit le texte de GHSA-8r88-6cj9-9fh5 (source externe au dépôt) et indique le module et la
+   fonction visés. (b) `action` ou `policy` vérifie, en lecture seule dans `node:22.12.0-alpine` (aucun réseau hors
+   registre), que cette fonction n'est ni appelée par `app.js`, ni atteignable depuis les fonctions utilisées de
+   `supabase-js` tel que bundlé (metafile, condition C2). Si oui : classement B consigné, réévaluation si `app.js` ajoute un
+   appel.
+2. **Voie 2 — montée** : `@supabase/supabase-js` de 2.47.10 vers **2.119.0** (version exacte, nouvelle décision). Effets :
+   nouveau bundle ; recette des parcours d'authentification (CA-002-5, 6, 7, 10, 12) ; amendement de **SPEC-001.8 (b)** et
+   de **SPEC-006 §3 item 2**, qui écrivent la version 2.47.10 en dur ; amendement d'ADR-002 et de la policy 2. Non faite ici.
+3. **Voie 3 — acceptation écrite du risque** par le chef de projet (motif et date consignés ici). L'architecte
+   n'accorde pas cette acceptation.
+
+**Recommandation de l'architecte** : voie 1 d'abord. Si elle ne peut pas aboutir avant la mise en service de `service`,
+la voie 2 devient **bloquante** pour `deploy service`, de préférence à la voie 3, car la pile `service` a vocation à être
+exposée. **Pas de montée d'office** : la décision appartient au chef de projet.
 
 ## Décision
 
-1. **Aucune mise à jour dans cette itération.** Pas de `npm audit fix`, pas de `overrides` ni de plage de version,
-   pas de nouveau `^` ou `~`. Les versions de `package.json` et `package-lock.json` restent celles de SPEC-006 §3.
-   Une correction éventuelle est une montée de version **exacte**, traitée comme une nouvelle décision.
-2. Les trois avis sont **acceptés conditionnellement** : chacun doit être classé A ou B dans la liste nominative
-   ci-dessous (identifiant, paquet, cas, motif). Le classement suit le tableau de pré-classement.
-3. Un avis de cas C, ou de sévérité haute ou critique, **bloque** la mise en service de la pile service tant qu'il
-   n'est pas traité.
-4. Contrôle continu : la policy `FRONT-audit-npm` (SPEC-001.15, SPEC-006 §3) exécute `npm audit --json` sur le lock
-   dans l'image `node:22.12.0-alpine` et échoue si un avis n'est pas listé ici, ou s'il est de sévérité haute ou
-   critique. Si le registre npm est injoignable, la policy n'est **pas réussie** : statut « non exécutée », ce qui
-   n'est pas une validation.
+1. **Aucune mise à jour** dans cette itération. Pas de `npm audit fix`, pas d'`overrides`, pas de plage de version. Les
+   versions de `package.json` et `package-lock.json` restent celles de SPEC-006 §3.
+2. **GHSA-67mh-4wv8-2f99 (esbuild) : cas A, accepté, non bloquant.** Montée 0.28.2 : à demander au chef de projet pour
+   l'itération 003.
+3. **GHSA-8r88-6cj9-9fh5 (auth-js, et entrée dérivée supabase-js) : cas C provisoire.** Bloque `./dev deploy service`
+   jusqu'à levée par la voie 1, 2 ou 3. Ne bloque ni la pile `dev`, ni la recette `dev` de l'itération 002.
+4. **Montée de supabase-js** : non décidée. Bloquante pour `deploy service` si la voie 1 n'aboutit pas et que le chef
+   de projet choisit la voie 2 ; sinon, à traiter à l'itération 003.
+5. **Contrôle continu** : policy **n° 25** `FRONT-audit-npm` (SPEC-001.15 (b), SPEC-006 §3). Numéro réservé le
+   2026-11-17 (premier libre dans `policies/checks/`). L'ancien « 13 » est occupé par `13-gw-admin-bloque.sh`. Identifiants
+   attendus : `GHSA-67mh-4wv8-2f99` et `GHSA-8r88-6cj9-9fh5`. Échec si un identifiant n'est pas listé ici, ou si la
+   sévérité est haute ou critique. Si le registre est injoignable : statut « non exécutée », jamais « réussie ».
 
 ## Conditions pour que la décision tienne
 
-- **C1 — Identifiants** : les trois identifiants sont relevés et classés **avant** la recette client. Source
-  attendue : sortie `npm audit --json` de la policy `FRONT-audit-npm` dans `iterations/002/policies/`, ou autorisation
-  ponctuelle du chef de projet (voir Points ouverts 1).
-- **C2 — Metafile reproductible** : `./dev build` produit `meta/vendor-metafile.json` ; la policy (ou le testeur)
-  vérifie que `ws/browser.js` et `@supabase/node-fetch/browser.js` sont les seuls paquets Node-only du bundle, et que
-  `whatwg-url`, `tr46`, `webidl-conversions`, `esbuild` n'y figurent pas. Le fichier n'est pas copié dans l'image.
-- **C3 — Non-ouverture de WebSocket** : la recette réseau (ou un test) établit qu'aucune connexion `ws://`/`wss://`
-  n'est ouverte au chargement de la page et pendant les parcours de SPEC-005. Sans cette preuve, `realtime-js` reste
-  non classé en B.
-- **C4 — `esbuild` confirmé build seul** : absent de `dist/` (acquis par le constat du développeur, à rejouer via C2).
+- **C1 — Identifiants** : relevés (journal `123343`). **Partiel** : preuve exécutable à produire par la policy n° 25
+  dans `iterations/002/policies/`.
+- **C2 — Metafile reproductible** : `./dev build` produit `meta/vendor-metafile.json` (hors `dist/`, donc hors image).
+  La policy ou le testeur vérifie que `ws/browser.js` et `@supabase/node-fetch/browser.js` sont les seuls paquets Node-only
+  du bundle, et que `whatwg-url`, `tr46`, `webidl-conversions`, `esbuild` n'y figurent pas. **Non fait.**
+- **C3 — Non-ouverture de WebSocket** : nécessaire seulement pour classer `realtime-js` en B conditionnel. Sans effet sur
+  les décisions de cet ADR. **Non fait.**
+- **C4 — esbuild build seul** : constat statique fait ici (Dockerfile, `build.mjs`, grep). À rejouer par la policy n° 25
+  avec C2.
+- **C5 — auth-js (nouvelle)** : voie 1 réalisée, ou voie 2 ou 3 consignée ici. **Non remplie.** Bloque `deploy service`.
 
 ## Conséquences
 
-- Le front reste à la version exacte de supabase-js (ADR-002) ; aucun changement fonctionnel.
-- Les avis restent visibles au niveau du dépôt : ils ne sont pas masqués, et la policy les relève à chaque itération.
-- Le risque résiduel est documenté : un avis découvert plus tard dans un paquet du bundle impose une réévaluation
-  (nouvelle entrée de la liste, cas A/B/C).
-- Le choix ne modifie ni la pile, ni la passerelle, ni les variables d'environnement.
+- Le front reste à `@supabase/supabase-js@2.47.10` : aucun changement fonctionnel.
+- Les avis restent visibles, datés et relevés à chaque itération (policy n° 25).
+- Le blocage est limité à la pile `service` : la recette `dev` n'est pas retardée.
+- Si `app.js` ajoute un appel auth non listé (admin, MFA, réinitialisation, OAuth), ou si esbuild démarre un serveur,
+  réévaluation obligatoire de A et de C.
+- Toute montée de supabase-js impose d'amender SPEC-001.8 (b), SPEC-006 §3 item 2, ADR-002 et la policy 2 (non fait ici).
 
 ## Alternatives écartées
 
-- **`npm audit fix` ou overrides maintenant** : modifie le lock sans que l'on sache quels paquets sont en cause,
-  hors règle « versions épinglées » et hors bornes de validation de cette boucle.
+- **`npm audit fix` ou `overrides` maintenant** : modifie le lock sans savoir quels paquets sont en cause, hors règle
+  « versions épinglées ».
 - **Ignorer l'audit** : la policy rend l'acceptation explicite et datée.
+- **Montée esbuild 0.28.2 dans cette itération** : version majeure pour un avis de cas A, sans bénéfice pour le build.
+- **Accepter auth-js d'office** : décision du chef de projet, pas de l'architecte (voie 3).
 - **Retirer supabase-js** : hors périmètre (ADR-002).
-
-## Liste des avis (à compléter, Condition C1)
-
-| Identifiant | Paquet (version de l'arbre) | Sévérité | Cas (A/B/C) | Motif |
-|---|---|---|---|---|
-| à relever | à relever | faible | à classer | — |
-| à relever | à relever | faible | à classer | — |
-| à relever | à relever | modérée | à classer | — |
-
-Règle à appliquer dès relevé : paquet dans la première partie du tableau de pré-classement → A ; `realtime-js` /
-`storage-js` / `functions-js` → B conditionnel (C2, C3) ; `auth-js` / `postgrest-js` / cœur `supabase-js` → C
-sauf preuve de non-appel.
 
 ## Points ouverts
 
-1. **Relever les trois identifiants** (`npm audit --json` dans `node:22.12.0-alpine`, sur `app/web/package-lock.json`)
-   et les consigner dans la table ci-dessus. Passage autorisé : **policy `FRONT-audit-npm`** exécutée par `action` ou
-   `policy` (`./dev policies`), ou **autorisation ponctuelle du chef de projet** si la policy n'existe pas encore. Le
-   développeur ne peut pas lancer `docker run` (garde-fou). Confirmer si `esbuild` en fait partie.
-2. **Numéro de policy en collision** : SPEC-006 §3 et cet ADR désignent `FRONT-audit-npm` par le numéro **13**, déjà
-   occupé par `policies/checks/13-gw-admin-bloque.sh`. Décision à prendre par `policy` (numéro libre) avec mise à jour
-   de SPEC-006 §3 et de SPEC-001.15 par l'architecte. Tant que la policy n'est pas écrite, `FRONT-audit-npm` n'existe pas.
-3. **Preuve non persistée** : l'extraction du metafile a été faite en `/tmp` puis supprimée. Condition C2 : la
-   vérification doit être rejouée et consignée dans `iterations/002/policies/` ou dans le rapport de `policy`.
-4. **Condition C3** (non-ouverture de WebSocket) : à établir par `testeur` ou `client` (recette réseau, lecture seule).
-5. **`metafile` d'esbuild** : ajouté au build par le développeur (`app/web/build.mjs`) ; reste à le faire vérifier par
-   une policy (C2).
+1. **Chef de projet** : lire GHSA-8r88-6cj9-9fh5 et indiquer la fonction visée (voie 1), ou choisir la voie 2 ou 3.
+2. **Chef de projet** : inscrire la montée d'esbuild 0.28.2 au périmètre de l'itération 003 (recommandé).
+3. **Policy** : écrire et exécuter la policy n° 25 (identifiants, metafile, recherche de `serve`/`watch`/`context(`).
+4. **Divergence de sources** : `122914` (refus de `docker run`) et `123343` (`npm audit` réussi via le wrapper). Rejouer
+   le relevé par la policy n° 25 pour que la preuve soit unique.
