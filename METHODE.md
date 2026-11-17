@@ -151,6 +151,10 @@ L'utilisateur n'avait pas répondu à ces questions ; il a validé ensuite la ba
 
 ## 4. État au moment de la rédaction
 
+**Itération 002 CLÔTURÉE** le 17/11/2026 à 16:12 UTC (acceptation formelle du PO, `iterations/002/cloture.md`).
+Coût : 34,76 USD en équivalent API.
+
+
 - **Production** : dnum.lelabs.tech → rebond → `10.77.0.25:8081` (pile `service`, 8 comptes
   réels, sauvegardes locales).
 - **dev** : gelée 7 jours (aucun reset), puis redevient jetable.
