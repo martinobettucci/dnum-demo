@@ -26,9 +26,18 @@ body { min-height: 100vh; }
   position: absolute;
   left: -9999px;
 }
-.lien-evitement:focus { left: 1rem; top: 1rem; background: var(--fond); padding: .3rem .6rem; }
+.lien-evitement:focus { left: 1rem; top: 1rem; z-index: 30; background: var(--fond); padding: .3rem .6rem; }
+
+/* SPEC-005.6 : barre supérieure fixe (hauteur ≤ 120 px) ; la marge de défilement est posée par app.js. */
+html { scroll-padding-top: 5.5rem; }
 
 .entete {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  max-height: 120px;
+  overflow-y: auto;
+  background: var(--fond);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -101,6 +110,23 @@ summary {
 details { margin-top: .4rem; }
 details > form { margin: .5rem 0 .25rem; }
 
+/* Retour de recette (rapport-client, SPEC-005) : plier ou déplier un formulaire ne décale aucun élément.
+   Le contenu sort du flux et se superpose sous le résumé ; le résumé et les boutons ne bougent pas. */
+details.depliable { position: relative; }
+details.depliable > :not(summary) {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 10;
+  width: min(32rem, calc(100vw - 3rem));
+  margin: .25rem 0 0;
+  padding: .75rem 1rem;
+  background: var(--fond);
+  border: 1px solid var(--bordure);
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .15);
+}
+
 .champ {
   display: flex;
   flex-direction: column;
@@ -159,3 +185,16 @@ ul.liste > li { padding: .5rem 0; border-bottom: 1px solid var(--bordure); }
 .tache-meta { color: var(--discret); font-size: .92rem; }
 
 .centre { max-width: 28rem; margin: 2rem auto; }
+
+/* SPEC-005.63 : bloc de confirmation de désactivation (role="group", sans fenêtre modale). */
+.confirmation {
+  margin-top: .4rem;
+  padding: .5rem .75rem;
+  border: 1px solid var(--bordure);
+  border-radius: 6px;
+  max-width: 32rem;
+}
+.confirmation p { margin: 0 0 .5rem; }
+
+/* SPEC-005.62 : recherche dans les listes d'administration. */
+.recherche { max-width: 32rem; margin: .5rem 0 .75rem; }

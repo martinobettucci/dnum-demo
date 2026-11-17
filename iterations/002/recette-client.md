@@ -3,7 +3,7 @@
 - Destinataire : Team DevOps, agent `client` (recette au clavier et à la souris uniquement, `tools/client/client.sh`).
 - Rédigé par : product owner, 2026-11-17, à partir de `perimetre.md` (critères marqués [C]).
 - Tour 3 (préparation, **non exécutée** : gel de la pile `dev`) : étapes 5 et 16 (messages de confirmation, CA-002-27/28),
-  étape 17 bis (nouvelle : barre fixe CA-002-37, recherche administrateur CA-002-38), étape 18.1 (confirmation, CA-002-34).
+  étape 17 bis (nouvelle : barre fixe CA-002-37, recherche administrateur CA-002-38), étape 18.1 (confirmation, CA-002-39).
 - Ne couvre **que** les critères [C]. Les critères [T] et [R] ne sont pas recettés ici.
 
 ## 0. Consignes
@@ -40,7 +40,8 @@
 | CA-002-15 | 10 | CA-002-29 | 16 |
 | CA-002-17 | 14 | CA-002-30 | 16 |
 | CA-002-18 | 11 | CA-002-32 | 16 |
-| CA-002-34 (Could) | 18.1 (confirmation incluse) | CA-002-35 (Could) | 18.2 |
+| CA-002-34 (Could) | 18.1 (étapes 4, 8) | CA-002-35 (Could) | 18.2 |
+| CA-002-39 (Could) | 18.1 (étapes 2, 3, 4) | | |
 | CA-002-37 | 17 bis A | CA-002-38 | 17 bis B |
 
 ## 2. Pas à pas
@@ -186,8 +187,8 @@ Préalable — compte 2 crée deux tâches :
 
 Proposition P1 — « Proposer mon aide » (CA-002-27, CA-002-29) :
 3. Connectez-vous avec **compte 1**. Sur le tableau de bord, cliquez « Recette Deux », puis sur **« Tâche E »** (non terminée, affectée à compte 2).
-4. Cliquez « Proposer mon aide », confirmez.
-5. **Attendu** : un message apparaît à l'écran et nomme le collègue et la tâche : « Proposition d'aide envoyée à Recette Deux pour « Tâche E » ». Le texte « Proposition envoyée » seul est un **KO** (CA-002-27). **[capture]**. Déconnectez-vous.
+4. Cliquez « Proposer mon aide » (aucune confirmation supplémentaire).
+5. **Attendu** : un message apparaît à l'écran, texte exact : « Proposition envoyée à Recette Deux pour la tâche « Tâche E ». ». Tout texte sans le nom du collègue ni celui de la tâche, dont « Proposition envoyée » seul, est un **KO** (CA-002-27). **[capture]**. Déconnectez-vous.
 6. Connectez-vous avec **compte 2**. Ouvrez « Propositions reçues ».
 7. **Attendu** : une proposition de « Recette Un » sur « Tâche E » est visible, avec le nom du proposant et la tâche.
 8. Cliquez « Accepter ».
@@ -196,7 +197,7 @@ Proposition P1 — « Proposer mon aide » (CA-002-27, CA-002-29) :
 
 Proposition P2 — « Demander de l'aide » (CA-002-28, CA-002-32, CA-002-30) :
 11. Toujours avec **compte 2**, sur « Tâche F » (non terminée), cliquez « Demander de l'aide », choisissez « Recette Un », validez.
-12. **Attendu** : un message apparaît à l'écran, sans autre clic : « Demande d'aide envoyée à Recette Un pour « Tâche F » » (CA-002-28). Le texte « Proposition envoyée » seul est un **KO**. **[capture]**. Déconnectez-vous.
+12. **Attendu** : un message apparaît à l'écran, sans autre clic, texte exact : « Demande d'aide envoyée à Recette Un pour la tâche « Tâche F ». » (CA-002-28). Tout texte sans le nom du collègue ni celui de la tâche est un **KO**. **[capture]**. Déconnectez-vous.
 13. Connectez-vous avec **compte 1**. Sur le tableau de bord, **Attendu** : le compteur de propositions reçues en attente affiche **1**. **[capture]**.
 14. Ouvrez « Propositions reçues ». **Attendu** : la proposition de « Recette Deux » sur « Tâche F » est visible.
 15. Cliquez « Refuser ».
@@ -224,21 +225,21 @@ Vérification finale de P2 :
 5. Ctrl + 0 (zoom 100 %). Déconnectez-vous.
 
 **B. Recherche administrateur (CA-002-38)** — état attendu : compte 1 et compte 2 activés ; compte 3 (« Recette Trois ») en attente ; recette-4 absent.
-6. Connectez-vous en administrateur. Ouvrez « Administration ». **Attendu** : un champ « Rechercher » est présent au-dessus de « Comptes en attente » et de « Comptes actifs ». Tab jusqu'à ce champ : il reçoit le focus (visible).
-7. Saisissez « recette trois », sans Entrée (ou avec). **Attendu** : « Comptes en attente » ne montre que « Recette Trois » ; « Comptes actifs » affiche « Aucun compte ne correspond à la recherche ». **[capture]**.
-8. Effacez le champ. **Attendu** : les listes reviennent complètes (au minimum « Recette Un » et « Recette Deux » dans « Comptes actifs », « Recette Trois » dans « Comptes en attente »). **[capture]**.
-9. Saisissez « RECETTE-1 » en majuscules, puis Entrée. **Attendu** : « Comptes actifs » ne montre que « Recette Un » (la casse est ignorée) ; « Comptes en attente » affiche « Aucun compte ne correspond à la recherche ». **[capture]**.
-10. Saisissez « zzzz ». **Attendu** : les deux listes affichent « Aucun compte ne correspond à la recherche ». **[capture]**.
-11. Effacez le champ. **Attendu** : listes complètes. Déconnectez-vous.
+6. Connectez-vous en administrateur. Ouvrez « Administration ». **Attendu** : deux champs de recherche, « Rechercher dans les comptes en attente » au-dessus de « Comptes en attente » et « Rechercher dans les comptes actifs » au-dessus de « Comptes actifs ». Tab jusqu'au premier champ : il reçoit le focus (visible).
+7. Dans le champ « Rechercher dans les comptes en attente », saisissez « recette trois ». **Attendu** : « Comptes en attente » ne montre que « Recette Trois ». Dans le champ « Rechercher dans les comptes actifs », saisissez « recette trois ». **Attendu** : « Comptes actifs » affiche « Aucun compte actif ne correspond à « recette trois ». ». **[capture]**.
+8. Effacez les deux champs. **Attendu** : les listes reviennent complètes (au minimum « Recette Un » et « Recette Deux » dans « Comptes actifs », « Recette Trois » dans « Comptes en attente »). **[capture]**.
+9. Dans le champ « Rechercher dans les comptes actifs », saisissez « RECETTE-1 » en majuscules, puis Entrée. **Attendu** : « Comptes actifs » ne montre que « Recette Un » (la casse est ignorée). Dans le champ « Rechercher dans les comptes en attente », saisissez « RECETTE-1 ». **Attendu** : « Comptes en attente » affiche « Aucun compte en attente ne correspond à « RECETTE-1 ». ». **[capture]**.
+10. Saisissez « zzzz » dans les deux champs. **Attendu** : « Comptes en attente » affiche « Aucun compte en attente ne correspond à « zzzz ». » ; « Comptes actifs » affiche « Aucun compte actif ne correspond à « zzzz ». ». **[capture]**.
+11. Effacez les deux champs. **Attendu** : listes complètes. Déconnectez-vous.
 
 ### Étape 18 — Fonctions Could (conditionnelles)
 À exécuter **seulement si** les stories US-15 et US-16 sont livrées dans cette itération. Sinon, notez « non applicable ».
 
-**18.1 — Désactivation (CA-002-34)**
+**18.1 — Désactivation (CA-002-34 et CA-002-39)**
 1. Connectez-vous en administrateur. Ouvrez « Administration », « Comptes actifs ».
-2. Cliquez « Désactiver » sur **compte 2**. **Attendu** : une fenêtre demande « Désactiver ce compte ? » avec les boutons « Confirmer » et « Annuler ». **[capture]**.
-3. Appuyez sur Échap (ou choisissez « Annuler »). **Attendu** : la fenêtre se ferme ; compte 2 figure toujours dans « Comptes actifs », sans changement.
-4. Recommencez : « Désactiver » sur **compte 2**, puis « Confirmer ». **Attendu** : compte 2 n'apparaît plus comme compte actif.
+2. Cliquez « Désactiver » sur **compte 2**. **Attendu** : sous la ligne s'ouvre un bloc disant « Désactiver le compte de Recette Deux ? Cette personne ne verra plus les données de l'équipe. », avec les boutons « Confirmer la désactivation » et « Annuler ». Le focus est sur « Annuler ». **[capture]**.
+3. Choisissez « Annuler ». **Attendu** : le bloc se ferme ; compte 2 figure toujours dans « Comptes actifs », sans changement.
+4. Recommencez : « Désactiver » sur **compte 2**, puis « Confirmer la désactivation ». **Attendu** : le message « Le compte de Recette Deux est désactivé. » apparaît ; compte 2 n'apparaît plus comme compte actif. **[capture]**.
 5. Déconnectez-vous. Connectez-vous avec compte 2.
 6. **Attendu** : seul l'écran « Compte en attente d'activation » est affiché.
 7. **[capture]**. Déconnectez-vous.
@@ -272,7 +273,7 @@ Vérification finale de P2 :
 
 ## 4. Couverture
 
-Les 27 critères [C] de l'itération 002 sont tous couverts par la table du §1 :
+Les 28 critères [C] de l'itération 002 sont tous couverts par la table du §1 :
 CA-002-5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 17, 18, 19, 21, 22, 23, 24, 25, 27, 28, 29, 30, 32, 34 (Could), 35 (Could),
-37, 38 (ajoutés au tour 3).
-Hors recette ici, par construction : CA-002-1, 33, 36 ([R] et [T]) ; CA-002-2, 3, 4, 11, 16, 20, 26, 31 ([T] ou [P]).
+37, 38, 39 (ajoutés au tour 3).
+Hors recette ici, par construction : CA-002-1, 33, 36 ([R] et [T]) ; CA-002-2, 3, 4, 11, 16, 20, 26, 31, 40 ([T] ou [P]).

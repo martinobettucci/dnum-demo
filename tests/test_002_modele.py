@@ -7,7 +7,7 @@ import datetime, uuid
 
 import pytest
 
-from conftest import (Api, compte_admin, connecter, nombre_total, refus, sans_effet, un)
+from conftest import (Api, compte_admin, connecter, extrait, nombre_total, refus, sans_effet, un)
 
 TABLES = ["profiles", "tasks", "time_entries", "help_proposals"]
 VUES = ["task_summary", "team_load"]
@@ -46,7 +46,7 @@ def propositions_recues(api, task_id):
 @pytest.mark.parametrize("objet", TABLES + VUES)
 def test_anon_lecture_zero_ligne_ou_refus(jeu, anon_key, objet, bearer_anon):
     r = Api(anon_key, bearer_anon=bearer_anon).get(objet)
-    assert sans_effet(r) and r.status_code < 500, f"{objet} → {r.status_code} {r.text[:200]}"
+    assert sans_effet(r) and r.status_code < 500, f"{objet} → {r.status_code} {extrait(r, 200)}"
 
 
 @pytest.mark.spec("SPEC-002.1")
@@ -57,7 +57,7 @@ def test_anon_ecriture_tache_refusee_sans_effet(jeu, anon_key, admin, bearer_ano
     r = Api(anon_key, bearer_anon=bearer_anon).post(
         "tasks", {"title": titre, "estimate_hours": 1, "assignee_id": jeu["a"].id,
                   "created_by": jeu["a"].id})
-    assert refus(r), f"{r.status_code} {r.text[:200]}"
+    assert refus(r), f"{r.status_code} {extrait(r, 200)}"
     assert admin.rows("tasks", title=f"eq.{titre}") == []
 
 
@@ -84,7 +84,7 @@ def test_anon_ecriture_temps_profil_proposition_refusees_sans_effet(jeu, anon):
 def test_anon_rpc_metier_refusees(jeu, anon, admin, inactif, idx):
     nom, args = rpcs_metier(jeu, inactif.id)[idx]
     r = anon.rpc(nom, **args)
-    assert refus(r), f"{nom} → {r.status_code} {r.text[:200]}"
+    assert refus(r), f"{nom} → {r.status_code} {extrait(r, 200)}"
     # aucun effet : la cible reste inactive, la tâche reste chez A
     assert compte_admin(admin, user_id=inactif.id)[0]["is_active"] is False
     assert admin.task(jeu["task"]["id"])["assignee_id"] == jeu["a"].id
@@ -96,7 +96,7 @@ def test_anon_rpc_metier_refusees(jeu, anon, admin, inactif, idx):
 @pytest.mark.parametrize("objet", TABLES + VUES)
 def test_inactif_lecture_zero_ligne_ou_refus(jeu, inactif, objet):
     r = inactif.get(objet)
-    assert sans_effet(r) and r.status_code < 500, f"{objet} → {r.status_code} {r.text[:200]}"
+    assert sans_effet(r) and r.status_code < 500, f"{objet} → {r.status_code} {extrait(r, 200)}"
 
 
 @pytest.mark.spec("SPEC-002.3")
@@ -110,7 +110,7 @@ def test_inactif_my_status_is_active_false(inactif):
 def test_inactif_creation_tache_refusee_sans_effet(inactif, admin):
     titre = f"inactif-{uuid.uuid4().hex}"
     r = inactif.post("tasks", {"title": titre, "estimate_hours": 1, "assignee_id": inactif.id})
-    assert refus(r), f"{r.status_code} {r.text[:200]}"
+    assert refus(r), f"{r.status_code} {extrait(r, 200)}"
     assert admin.rows("tasks", title=f"eq.{titre}") == []
 
 
@@ -134,7 +134,7 @@ def test_inactif_rpc_metier_refusees(jeu, fabrique, inactif, admin, idx):
     if nom == "admin_set_active":
         args["p_user"] = inactif.id  # tentative d'auto-activation
     r = inactif.rpc(nom, **args)
-    assert refus(r), f"{nom} → {r.status_code} {r.text[:200]}"
+    assert refus(r), f"{nom} → {r.status_code} {extrait(r, 200)}"
     assert inactif.status()["is_active"] is False
     assert admin.task(jeu["task"]["id"])["assignee_id"] == jeu["a"].id
     assert not [p for p in propositions_recues(jeu["a"], jeu["task"]["id"])
@@ -145,7 +145,7 @@ def test_inactif_rpc_metier_refusees(jeu, fabrique, inactif, admin, idx):
 @pytest.mark.spec("SPEC-002.5")
 def test_inactif_ne_peut_pas_s_activer_par_patch_profiles(inactif, admin):
     r = inactif.patch("profiles", {"id": f"eq.{inactif.id}"}, {"is_active": True, "role": "admin"})
-    assert sans_effet(r), f"{r.status_code} {r.text[:200]}"
+    assert sans_effet(r), f"{r.status_code} {extrait(r, 200)}"
     row = compte_admin(admin, user_id=inactif.id)[0]
     assert row["is_active"] is False and row["role"] == "member"
 
@@ -174,7 +174,7 @@ def test_inscrit_non_active_absent_de_team_load(inactif, admin):
 @pytest.mark.spec("SPEC-002.5")
 def test_admin_active_un_compte(inactif, admin):
     r = admin.rpc("admin_set_active", p_user=inactif.id, p_active=True)
-    assert 200 <= r.status_code < 300, r.text[:200]
+    assert 200 <= r.status_code < 300, extrait(r, 200)
     row = compte_admin(admin, user_id=inactif.id)[0]
     assert row["is_active"] is True and row.get("activated_at")
     assert inactif.status()["is_active"] is True
@@ -183,7 +183,7 @@ def test_admin_active_un_compte(inactif, admin):
 @pytest.mark.spec("SPEC-002.5")
 def test_membre_non_admin_ne_peut_pas_activer(membre, inactif, admin):
     r = membre.rpc("admin_set_active", p_user=inactif.id, p_active=True)
-    assert refus(r), f"{r.status_code} {r.text[:200]}"
+    assert refus(r), f"{r.status_code} {extrait(r, 200)}"
     assert compte_admin(admin, user_id=inactif.id)[0]["is_active"] is False
 
 
@@ -199,7 +199,7 @@ def test_membre_patch_profiles_sans_effet(membre, collegue, inactif, admin, cibl
     avant = compte_admin(admin, user_id=uid)[0]
     r = membre.patch("profiles", {"id": f"eq.{uid}"},
                      {"role": "admin", "is_active": not avant["is_active"], "display_name": "pirate"})
-    assert sans_effet(r), f"{r.status_code} {r.text[:200]}"
+    assert sans_effet(r), f"{r.status_code} {extrait(r, 200)}"
     apres = compte_admin(admin, user_id=uid)[0]
     assert (apres["role"], apres["is_active"], apres["display_name"]) == \
            (avant["role"], avant["is_active"], avant["display_name"])
@@ -224,7 +224,7 @@ def test_apres_activation_nouveau_jeton_voit_team_load_et_tasks(fabrique, membre
 def test_creation_tache_valide_201_todo_affectee_a_soi(membre):
     r = membre.post("tasks", {"title": "Ma tâche", "description": "facultative",
                               "estimate_hours": 2.5, "assignee_id": membre.id})
-    assert r.status_code == 201, r.text[:200]
+    assert r.status_code == 201, extrait(r, 200)
     t = r.json()[0]
     assert t["status"] == "todo"
     assert t["created_by"] == membre.id and t["assignee_id"] == membre.id
@@ -250,7 +250,7 @@ def test_creation_tache_sans_description_acceptee(membre):
 def test_creation_tache_invalide_400_sans_creation(membre, corps):
     avant = len(membre.rows("tasks", created_by=f"eq.{membre.id}"))
     r = membre.post("tasks", {**corps, "assignee_id": membre.id})
-    assert r.status_code == 400, f"{r.status_code} {r.text[:200]}"
+    assert r.status_code == 400, f"{r.status_code} {extrait(r, 200)}"
     assert len(membre.rows("tasks", created_by=f"eq.{membre.id}")) == avant
 
 
@@ -258,7 +258,7 @@ def test_creation_tache_invalide_400_sans_creation(membre, corps):
 def test_creation_tache_affectee_a_autrui_refusee(membre, collegue, admin):
     titre = f"autrui-{uuid.uuid4().hex}"
     r = membre.post("tasks", {"title": titre, "estimate_hours": 1, "assignee_id": collegue.id})
-    assert refus(r), f"{r.status_code} {r.text[:200]}"
+    assert refus(r), f"{r.status_code} {extrait(r, 200)}"
     assert admin.rows("tasks", title=f"eq.{titre}") == []
 
 
@@ -267,7 +267,7 @@ def test_creation_tache_created_by_usurpe_refusee(membre, collegue, admin):
     titre = f"usurpe-{uuid.uuid4().hex}"
     r = membre.post("tasks", {"title": titre, "estimate_hours": 1, "assignee_id": membre.id,
                               "created_by": collegue.id})
-    assert refus(r), f"{r.status_code} {r.text[:200]}"
+    assert refus(r), f"{r.status_code} {extrait(r, 200)}"
     assert admin.rows("tasks", title=f"eq.{titre}") == []
 
 
@@ -286,7 +286,7 @@ def verifier_modif(api, task_id):
 def test_affecte_modifie_titre_description_estimation_statut(membre):
     t = membre.create_task()
     r = membre.patch("tasks", {"id": f"eq.{t['id']}"}, MODIF)
-    assert r.status_code == 200 and len(r.json()) == 1, r.text[:200]
+    assert r.status_code == 200 and len(r.json()) == 1, extrait(r, 200)
     verifier_modif(membre, t["id"])
 
 
@@ -309,9 +309,9 @@ def test_statut_hors_liste_refuse(membre):
 def test_createur_non_affecte_peut_modifier(membre, collegue):
     t = membre.create_task()
     r = membre.rpc("reassign_task", p_task=t["id"], p_to=collegue.id)
-    assert 200 <= r.status_code < 300, f"reassign_task → {r.status_code} {r.text[:200]}"
+    assert 200 <= r.status_code < 300, f"reassign_task → {r.status_code} {extrait(r, 200)}"
     r = membre.patch("tasks", {"id": f"eq.{t['id']}"}, MODIF)
-    assert r.status_code == 200 and len(r.json()) == 1, r.text[:200]
+    assert r.status_code == 200 and len(r.json()) == 1, extrait(r, 200)
     verifier_modif(membre, t["id"])
 
 
@@ -320,7 +320,7 @@ def test_tiers_ne_peut_pas_modifier_la_tache(membre, tiers):
     """CA-002-16"""
     t = membre.create_task(title="Intouchable", estimate=2)
     r = tiers.patch("tasks", {"id": f"eq.{t['id']}"}, MODIF)
-    assert sans_effet(r), f"{r.status_code} {r.text[:200]}"
+    assert sans_effet(r), f"{r.status_code} {extrait(r, 200)}"
     apres = membre.task(t["id"])
     assert apres["title"] == "Intouchable" and approx(apres["estimate_hours"], 2)
     assert apres["status"] == "todo"
@@ -333,7 +333,7 @@ def test_patch_direct_assignee_ou_created_by_refuse(membre, collegue, admin, col
     t = membre.create_task()
     api = membre if acteur == "affecte" else collegue
     r = api.patch("tasks", {"id": f"eq.{t['id']}"}, {colonne: collegue.id})
-    assert sans_effet(r), f"{r.status_code} {r.text[:200]}"
+    assert sans_effet(r), f"{r.status_code} {extrait(r, 200)}"
     apres = admin.task(t["id"])
     assert apres["assignee_id"] == membre.id and apres["created_by"] == membre.id
 
@@ -406,7 +406,7 @@ def test_saisie_temps_bornes_acceptees(membre, minutes):
 def test_saisie_temps_duree_invalide_400(membre, minutes):
     t = membre.create_task()
     r = membre.post("time_entries", {"task_id": t["id"], "minutes": minutes})
-    assert r.status_code == 400, f"{r.status_code} {r.text[:200]}"
+    assert r.status_code == 400, f"{r.status_code} {extrait(r, 200)}"
     assert approx(membre.task(t["id"])["logged_hours"], 0)
 
 
@@ -415,7 +415,7 @@ def test_saisie_temps_par_non_affecte_refusee(membre, tiers):
     """CA-002-20"""
     t = membre.create_task()
     r = tiers.post("time_entries", {"task_id": t["id"], "minutes": 60})
-    assert refus(r), f"{r.status_code} {r.text[:200]}"
+    assert refus(r), f"{r.status_code} {extrait(r, 200)}"
     assert approx(membre.task(t["id"])["logged_hours"], 0)
 
 
@@ -432,7 +432,7 @@ def test_saisie_temps_par_createur_apres_reaffectation_refusee(membre, collegue)
 def test_saisie_temps_au_nom_d_autrui_refusee(membre, collegue):
     t = membre.create_task()
     r = membre.post("time_entries", {"task_id": t["id"], "minutes": 60, "user_id": collegue.id})
-    assert refus(r), f"{r.status_code} {r.text[:200]}"
+    assert refus(r), f"{r.status_code} {extrait(r, 200)}"
     assert approx(membre.task(t["id"])["logged_hours"], 0)
 
 
@@ -511,7 +511,7 @@ def test_reaffectation_par_affecte_vers_actif_et_charges_recalculees(membre, col
     avant_m = float(membre.load(membre.id)["projected_hours"])
     avant_c = float(membre.load(collegue.id)["projected_hours"])
     r = membre.rpc("reassign_task", p_task=t["id"], p_to=collegue.id)
-    assert 200 <= r.status_code < 300, r.text[:200]
+    assert 200 <= r.status_code < 300, extrait(r, 200)
     assert membre.task(t["id"])["assignee_id"] == collegue.id
     assert approx(membre.load(membre.id)["projected_hours"], avant_m - 3)
     assert approx(membre.load(collegue.id)["projected_hours"], avant_c + 3)
@@ -564,7 +564,7 @@ def test_reaffectation_tache_terminee_ou_vers_soi_refusee(membre, collegue):
 def test_offer_help_cree_proposition_visible_emetteur_et_destinataire(membre, collegue, tiers):
     t = membre.create_task()
     r = collegue.rpc("offer_help", p_task=t["id"])
-    assert 200 <= r.status_code < 300, r.text[:200]
+    assert 200 <= r.status_code < 300, extrait(r, 200)
     pid = un(r.json())
     for api in (collegue, membre):
         rows = api.rows("help_proposals", id=f"eq.{pid}")
@@ -603,7 +603,7 @@ def test_insertion_directe_help_proposals_refusee(membre, collegue):
     t = membre.create_task()
     r = collegue.post("help_proposals", {"task_id": t["id"], "kind": "offer",
                                          "from_user": collegue.id, "to_user": membre.id})
-    assert refus(r), f"{r.status_code} {r.text[:200]}"
+    assert refus(r), f"{r.status_code} {extrait(r, 200)}"
     assert propositions_recues(membre, t["id"]) == []
 
 
@@ -612,7 +612,7 @@ def test_insertion_directe_help_proposals_refusee(membre, collegue):
 def test_request_help_vers_actif_recue_par_le_destinataire(membre, collegue):
     t = membre.create_task()
     r = membre.rpc("request_help", p_task=t["id"], p_to=collegue.id)
-    assert 200 <= r.status_code < 300, r.text[:200]
+    assert 200 <= r.status_code < 300, extrait(r, 200)
     rows = propositions_recues(collegue, t["id"])
     assert len(rows) == 1
     p = rows[0]
@@ -657,7 +657,7 @@ def test_accepter_offer_affecte_la_tache_au_proposant(membre, collegue):
     t = membre.create_task(estimate=2)
     pid = un(collegue.rpc("offer_help", p_task=t["id"]).json())
     r = membre.rpc("respond_proposal", p_id=pid, p_accept=True)
-    assert 200 <= r.status_code < 300, r.text[:200]
+    assert 200 <= r.status_code < 300, extrait(r, 200)
     assert membre.task(t["id"])["assignee_id"] == collegue.id
     p = proposition(collegue, pid)
     assert p["status"] == "accepted" and p["decided_at"]
@@ -672,7 +672,7 @@ def test_accepter_request_affecte_la_tache_au_destinataire(membre, collegue):
     r = membre.rpc("request_help", p_task=t["id"], p_to=collegue.id)
     pid = un(r.json())
     r = collegue.rpc("respond_proposal", p_id=pid, p_accept=True)
-    assert 200 <= r.status_code < 300, r.text[:200]
+    assert 200 <= r.status_code < 300, extrait(r, 200)
     assert membre.task(t["id"])["assignee_id"] == collegue.id
     assert proposition(membre, pid)["status"] == "accepted"
 
@@ -688,7 +688,7 @@ def test_refuser_laisse_l_affectation_inchangee(membre, collegue, sens):
         pid = un(membre.rpc("request_help", p_task=t["id"], p_to=collegue.id).json())
         dest, emet = collegue, membre
     r = dest.rpc("respond_proposal", p_id=pid, p_accept=False)
-    assert 200 <= r.status_code < 300, r.text[:200]
+    assert 200 <= r.status_code < 300, extrait(r, 200)
     assert membre.task(t["id"])["assignee_id"] == membre.id
     p = proposition(emet, pid)
     assert p["status"] == "refused" and p["decided_at"]
@@ -779,7 +779,7 @@ def test_compteur_propositions_recues_en_attente(membre, collegue, tiers):
     membre.rpc("respond_proposal", p_id=p3, p_accept=False)
     r = membre.get("help_proposals", params={"to_user": f"eq.{membre.id}", "status": "eq.pending"},
                    headers={"Prefer": "count=exact"})
-    assert r.status_code in (200, 206), r.text[:200]
+    assert r.status_code in (200, 206), extrait(r, 200)
     assert nombre_total(r) == 2
 
 
@@ -792,7 +792,7 @@ def test_desactivation_retire_l_acces(fabrique, admin, anon_key, membre):
     u.create_task()
     assert admin.load(u.id) is not None
     r = admin.rpc("admin_set_active", p_user=u.id, p_active=False)
-    assert 200 <= r.status_code < 300, r.text[:200]
+    assert 200 <= r.status_code < 300, extrait(r, 200)
     assert admin.load(u.id) is None
     neuf = connecter(anon_key, u.email, u.password)
     assert neuf.status()["is_active"] is False

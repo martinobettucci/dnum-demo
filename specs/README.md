@@ -6,8 +6,8 @@
 | SPEC-000 | Socle de l'environnement | 001 | — | actif |
 | SPEC-001 | Pile Supabase auto-hébergée et passerelle unique | 002 | CA-002-1, 2, 3, 6, 7, 11, 33 | actif (amendé tour 1 complément : 001.3, 001.4, 001.11 ; tour 2 : 001.15 nouvelle, puis (b) et (d) et policy n° 25, arbitrage 2026-11-17 ; décision 2026-11-17 : 001.15 (d) amendé, (e) ajouté, policy n° 28) |
 | SPEC-002 | Modèle de données, RLS, charge projetée, entraide | 002 | CA-002-4, 6, 8 à 36 | actif |
-| SPEC-003 | Compte administrateur initial et secrets | 002 | CA-002-2, 4, 5, 33 | actif (amendé : 003.9 passe en `[T]`) |
-| SPEC-004 | Piles dev / service, persistance, sauvegarde, contrat `./dev` | 002 | CA-002-1, 2, 33, 36 | actif (amendé tour 1 complément : 004.7 à 004.10, 004.16 ; tour 2 : 004.7 restart (ADR-009), 004.11 env_file longue, 004.17 nouvelle ; tour 2 complément : renommage `secrets.py` → `gen_secrets.py` ; tour 3 : 004.18 nouvelle, ADR-011) |
+| SPEC-003 | Compte administrateur initial et secrets | 002 | CA-002-2, 4, 5, 33 | actif (amendé : 003.9 passe en `[T]` ; tour 3 : 003.5 amendé, 003.10 à 003.12 nouvelles, ADR-012) |
+| SPEC-004 | Piles dev / service, persistance, sauvegarde, contrat `./dev` | 002 | CA-002-1, 2, 33, 36 | actif (amendé tour 1 complément : 004.7 à 004.10, 004.16 ; tour 2 : 004.7 restart (ADR-009), 004.11 env_file longue, 004.17 nouvelle ; tour 2 complément : renommage `secrets.py` → `gen_secrets.py` ; tour 3 : 004.18 nouvelle, ADR-011 ; tour 3 : 004.8 et 004.13 amendés, ADR-012) |
 | SPEC-005 | Interface web (recette clavier/souris) | 002 | CA-002-5 à 8, 10, 12 à 15, 17 à 19, 21 à 25, 27 à 30, 32, 34, 35 ; tour 3 : 27, 28, 34 précisés ; 37 à 39 proposés | actif (tour 3 : 005.6, 005.7, 005.62, 005.63 nouvelles ; 005.1, 005.33, 005.40, 005.60 amendées ; messages M-1 à M-6) |
 | SPEC-006 | Plan de vérification (test / client / policy / RA) | 002 | CA-002-1 à 36 | actif (amendé : §1, §2, §3, §5 ; tour 2 : §2, §3 ; arbitrage 2026-11-17 : CA-002-1 (c) en [P], CA-002-9 avec 005.61, policies renumérotées n° 25 à 27 ; décision 2026-11-17 : §2 CA-002-2, §3 policy n° 28 ; tour 3 : §2 CA-002-27, 28, 33, 34 et CA-002-37 à 39 proposés, §3 policies n° 29 à 31) |
 
@@ -17,7 +17,7 @@
 | ADR-000 | Environnement de développement reproductible | accepté |
 | ADR-001 | Supabase auto-hébergé minimal derrière nginx (postgres 15.8.1.060, gotrue v2.170.0, postgrest v12.2.8) | accepté (amendé par ADR-007 : réseau) |
 | ADR-002 | Front HTML/JS natif, supabase-js 2.47.10, construit dans Docker (node 22.12.0) | accepté |
-| ADR-003 | Secrets générés hors git (`.devenv/secrets/`) et seed admin idempotent | accepté |
+| ADR-003 | Secrets générés hors git (`.devenv/secrets/`) et seed admin idempotent | accepté (amendé par ADR-012 : pas d'écrasement du mot de passe admin) |
 | ADR-004 | Deux piles (dev jetable, service persistante) et sauvegarde | accepté (amendé par ADR-007, ADR-008, ADR-009) |
 | ADR-005 | Sécurité : RLS forcée, écritures sensibles par RPC | accepté |
 | ADR-006 | Vérifiabilité de la pile dev : débit GoTrue (≥ 500 inscriptions/h), règle de même origine (code / `vendor/`), contrat `./dev` ↔ application | accepté (amende ADR-002 ; §3 amendé tour 2 : `env_file` longue) |
@@ -26,6 +26,7 @@
 | ADR-009 | Redémarrage automatique de toute la pile service (db, auth, rest, app) | accepté (tour 2) ; policy n° 26 |
 | ADR-010 | Vulnérabilités npm transitives de `app/web` : évaluation et décision | **accepté, tranché** (décision 2026-11-17) : esbuild GHSA-67mh-4wv8-2f99 = cas A, non bloquant ; auth-js GHSA-8r88-6cj9-9fh5 = cas A (voie 1), **blocage `deploy service` levé** sous condition de la policy n° 28 ; policies n° 25 et 28 |
 | ADR-011 | Migrations additives et non destructives sur données réelles | accepté (tour 3, 2026-11-17) ; amende SPEC-004.12 par SPEC-004.18 ; policy n° 29 |
+| ADR-012 | Seed admin sans écrasement : la base fait foi après création | accepté (tour 3, 2026-11-17) ; amende ADR-003, SPEC-003.5, SPEC-004.8, SPEC-004.13 ; SPEC-003.10 à 003.12 (révisés : 003.10/003.11 vérifiés par stub GoTrue sans deploy) ; policy à écrire (seed.py, SPEC-003.10) ; point à vérifier : champ `email_confirmed_at` de GoTrue v2.170.0 à la première réponse réelle |
 
 Notes :
 - SPEC-000.1 reste valable (`/` répond 200) ; la publication du port est désormais précisée par ADR-007
@@ -158,3 +159,31 @@ Points ouverts :
 3. « Réaffecter » sans message de confirmation, « Loguer du temps » et « Modifier » : même défaut, non spécifiés (décision chef de projet).
 4. Policy 29 : référence git de comparaison des migrations `001`–`005` à consigner dans `mise-en-service.md` au prochain `deploy`.
 5. Recette client de ces retours : à programmer après la levée du gel et un `./dev deploy` (pas de `reset`, SPEC-004.12 / ADR-011).
+
+## Tour 3 de l'itération 002, suite : seed admin sans écrasement (2026-11-17, ADR-012)
+
+Motif : relevé DevOps, le seed réécrit `ADMIN_PASSWORD` à chaque `deploy`, y compris sans `reset` avec données réelles.
+
+Décisions :
+- Le seed **crée** `ADMIN_EMAIL` s'il est absent et **ne modifie jamais** un compte existant (SPEC-003.10). Compte existant
+  sans e-mail confirmé : rc≠0, rien modifié (SPEC-003.11).
+- Après création, la **base fait foi** pour le mot de passe admin ; `ADMIN_PASSWORD` est un mot de passe initial ; le fichier
+  et la base peuvent diverger, sans resynchronisation (SPEC-003.12, ADR-012). `reset` ramène au mot de passe du fichier ;
+  `restore` restitue celui du dump (SPEC-004.8).
+- Promotion `db.sh promote-admin` : idempotente, une ligne mise à jour même si déjà admin (SPEC-004.13, 003.5).
+- **Aucun changement de `./dev`** (séquence SPEC-004.15 inchangée). Changement de `tools/deploy/seed.py` seul : agent `action`.
+
+Fichiers modifiés : `SPEC-003-admin-secrets.md`, `SPEC-004-piles-dev-service.md`, `adr/ADR-003-secrets-et-seed.md` (renvoi),
+`README.md`. Nouveau : `adr/ADR-012-seed-admin-sans-ecrasement.md`.
+
+Points ouverts :
+1. **Action** : modifier `tools/deploy/seed.py` (branche « compte absent » seule en écriture) ; `db.sh promote-admin` à vérifier
+   idempotent (une ligne sur admin déjà promu). Déploiement sans `reset` par le responsable applicatif, à la levée du gel.
+2. **Chef de projet** : le relevé ne dit pas si un administrateur a changé son mot de passe depuis le dernier `deploy` (il aurait
+   été écrasé). À vérifier avant la levée du gel ; prévenir les utilisateurs concernés le cas échéant.
+3. **Testeur** : `tests/test_003_admin.py` (SPEC-003.5, 003.10, 003.11, 003.12). **Policy** (`policy`) : contrôle statique de
+   `seed.py` (SPEC-003.10) ; numéro à attribuer par `policy` après vérification qu'il est libre (25 à 31 déjà réservés par les tours 2 et 3).
+4. **Chef de projet** : confirmer qu'aucune fonction de changement de mot de passe n'est attendue dans cette itération
+   (sinon, nouvelle spec ; ADR-012, décision 6).
+5. Non tranché : la modification de `ADMIN_EMAIL` dans le fichier de secrets après création crée un second compte admin
+   (le seed ne supprime rien). Hors périmètre ; à traiter dans une itération dédiée si besoin.

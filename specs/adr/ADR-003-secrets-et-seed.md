@@ -1,6 +1,9 @@
 # ADR-003 — Secrets générés hors git et seed idempotent du compte administrateur
 
 Statut : accepté (itération 002) — couvre CA-002-2, CA-002-4, CA-002-33.
+**Amendé par ADR-012 (tour 3)** : le seed ne réécrit plus le mot de passe d'un compte admin existant ; après création,
+la base fait foi pour ce mot de passe. Les passages « source de vérité » et « écrasé au déploiement suivant » ci-dessous
+ne sont plus valables.
 
 ## Contexte
 - Aucun secret dans le dépôt (CLAUDE.md). Le mot de passe admin est généré, jamais commité,

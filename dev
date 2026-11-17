@@ -22,7 +22,10 @@ case "$PILE" in
   *) echo "pile inconnue : $PILE (dev|service)" >&2; exit 1 ;;
 esac
 SECRETS="$ROOT/.devenv/secrets/$PILE.env"
-export DEVENV_PILE="$PILE" DEVENV_SECRETS="$SECRETS" APP_PORT="${APP_PORT:-$PORT_DEFAUT}"
+export DEVENV_PILE="$PILE" DEVENV_SECRETS="$SECRETS" APP_PORT="${APP_PORT:-$PORT_DEFAUT}" APP_LAN_IP="${APP_LAN_IP:-10.77.0.25}"   # SPEC-004.17
+# SPEC-004.17(b) : format IPv4 pointé validé avant tout appel à docker.
+ip_re='^[0-9]{1,3}(\.[0-9]{1,3}){3}$'
+[[ $APP_LAN_IP =~ $ip_re ]] || { echo "APP_LAN_IP invalide : « $APP_LAN_IP » (IPv4 pointée attendue)" >&2; exit 1; }
 
 # docker compose sur la pile choisie ; les secrets (s'ils existent) servent à l'interpolation.
 dc() {
@@ -112,7 +115,7 @@ H
     fi
     [[ $PILE == dev ]] && dc --profile client up -d client
     echo "{\"date\":\"$(now)\",\"iteration\":\"$it\",\"pile\":\"$PILE\",\"commit\":\"$(git rev-parse --short HEAD 2>/dev/null || echo non-commite)\",\"duree_s\":$(( $(date +%s)-t0 ))}" >> .devenv/deploy.log
-    echo "Mise en service ($PILE) OK en $(( $(date +%s)-t0 )) s — http://127.0.0.1:${APP_PORT}/" ;;
+    echo "Mise en service ($PILE) OK en $(( $(date +%s)-t0 )) s — http://${APP_LAN_IP}:${APP_PORT}/" ;;
   teardown) dc --profile client --profile tools --profile deploy down --remove-orphans ;;
   reset)
     if [[ $PILE == service && " $* " != *" --confirmer-destruction "* ]]; then

@@ -8,7 +8,7 @@
   Aucune dépendance à des données préexistantes hors compte admin : rejouable sur base non vide.
 - Pile non démarrée ⇒ tous les tests sont « skip » (SPEC-006 §1).
 """
-import base64, json, os, pathlib, uuid
+import base64, json, os, pathlib, re, uuid
 from urllib.parse import urlsplit
 
 import pytest
@@ -97,6 +97,53 @@ def lire_env(path):
     return vals
 
 
+# --------------------------------------------------------------------------- masquage des secrets
+# Règle : aucune valeur secrète dans un message d'assertion, un repr, un id de test ni une sortie.
+# Les assertions ne manipulent que des booléens / entiers calculés hors assert ; ce qui sort des
+# tests (corps de réponse, rapport junit, sections capturées) passe par masquer().
+CLES_SECRETES = re.compile(r"PASSWORD|SECRET|KEY|TOKEN", re.IGNORECASE)
+JWT_MASQUE = re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+")
+MOTIFS_MASQUES = (re.compile(r"Test-[0-9a-f]{16}"), re.compile(r"P-[0-9a-f]{24}"))
+
+
+def valeurs_secretes():
+    """Valeurs à masquer : secrets du fichier (clés PASSWORD/SECRET/KEY/TOKEN) et mot de passe de session."""
+    vals = {MOT_DE_PASSE_TEST}
+    if SECRETS_FILE.is_file():
+        try:
+            env = lire_env(SECRETS_FILE)
+        except OSError:
+            env = {}
+        vals |= {v for k, v in env.items() if CLES_SECRETES.search(k) and len(v) >= 8}
+    return sorted(vals, key=len, reverse=True)
+
+
+def masquer(texte):
+    """Remplace les secrets, les JWT et les mots de passe dérivés par des marqueurs."""
+    texte = str(texte)
+    for v in valeurs_secretes():
+        texte = texte.replace(v, "<secret masqué>")
+    texte = JWT_MASQUE.sub("<jwt masqué>", texte)
+    for motif in MOTIFS_MASQUES:
+        texte = motif.sub("<mot de passe masqué>", texte)
+    return texte
+
+
+def extrait(r, n=300):
+    """Début du corps d'une réponse, masqué, pour les messages d'assertion."""
+    return masquer(r.text[:n])
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    """Filet de sécurité : rapport (junit.xml, terminal) et sections capturées sont masqués."""
+    outcome = yield
+    rapport = outcome.get_result()
+    if rapport.failed and rapport.longrepr is not None:
+        rapport.longrepr = masquer(rapport.longrepr)
+    rapport.sections = [(titre, masquer(contenu)) for titre, contenu in rapport.sections]
+
+
 @pytest.fixture(scope="session")
 def secrets_env():
     assert SECRETS_FILE.is_file(), f"fichier de secrets absent : {SECRETS_FILE} (SPEC-003.1)"
@@ -105,8 +152,11 @@ def secrets_env():
 
 @pytest.fixture(scope="session")
 def anon_key(secrets_env):
-    assert secrets_env.get("ANON_KEY"), "ANON_KEY absente du fichier de secrets"
-    return secrets_env["ANON_KEY"]
+    # Pas d'assert sur secrets_env.get(...) : pytest réaffiche le dictionnaire entier dans l'explication.
+    cle = secrets_env.get("ANON_KEY")
+    if not cle:
+        pytest.fail("ANON_KEY absente du fichier de secrets", pytrace=False)
+    return cle
 
 
 def jwt_payload(token):
@@ -127,6 +177,10 @@ class Api:
         self.email = None
         self.password = None
         self.display_name = None
+
+    def __repr__(self):
+        # Jamais de jeton ni de mot de passe dans un repr (messages d'assertion, journaux)
+        return f"<Api compte={self.id or 'anonyme'}>"
 
     def headers(self, extra=None):
         h = {"apikey": self.anon_key, "Content-Type": "application/json"}
@@ -162,7 +216,7 @@ class Api:
     # Lectures pratiques (assertion d'un succès HTTP)
     def rows(self, path, **params):
         r = self.get(path, params=params)
-        assert r.status_code == 200, f"GET {path} → {r.status_code} {r.text[:300]}"
+        assert r.status_code == 200, f"GET {path} → {r.status_code} {extrait(r, 300)}"
         return r.json()
 
     def task(self, task_id):
@@ -176,24 +230,24 @@ class Api:
 
     def status(self):
         r = self.rpc("my_status")
-        assert r.status_code == 200, f"my_status → {r.status_code} {r.text[:300]}"
+        assert r.status_code == 200, f"my_status → {r.status_code} {extrait(r, 300)}"
         return un(r.json())
 
     def create_task(self, title=None, estimate=1, **extra):
         body = {"title": title or f"t-{uuid.uuid4().hex[:8]}", "estimate_hours": estimate,
                 "assignee_id": self.id, **extra}
         r = self.post("tasks", body)
-        assert r.status_code == 201, f"création de tâche → {r.status_code} {r.text[:300]}"
+        assert r.status_code == 201, f"création de tâche → {r.status_code} {extrait(r, 300)}"
         return r.json()[0]
 
     def log(self, task_id, minutes, **extra):
         r = self.post("time_entries", {"task_id": task_id, "minutes": minutes, **extra})
-        assert r.status_code == 201, f"saisie de temps → {r.status_code} {r.text[:300]}"
+        assert r.status_code == 201, f"saisie de temps → {r.status_code} {extrait(r, 300)}"
         return r.json()[0]
 
     def set_status(self, task_id, status):
         r = self.patch("tasks", {"id": f"eq.{task_id}"}, {"status": status})
-        assert r.status_code == 200 and len(r.json()) == 1, f"PATCH status → {r.status_code} {r.text[:300]}"
+        assert r.status_code == 200 and len(r.json()) == 1, f"PATCH status → {r.status_code} {extrait(r, 300)}"
 
 
 def un(data):
@@ -251,7 +305,7 @@ def login(anon_key, email, password):
 
 def connecter(anon_key, email, password):
     r = login(anon_key, email, password)
-    assert r.status_code == 200, f"connexion {email} → {r.status_code} {r.text[:200]}"
+    assert r.status_code == 200, f"connexion {email} → {r.status_code} {extrait(r, 200)}"
     api = Api(anon_key, r.json()["access_token"])
     api.email, api.password = email, password
     return api
@@ -261,7 +315,8 @@ def connecter(anon_key, email, password):
 @pytest.fixture(scope="session")
 def admin(secrets_env, anon_key):
     for k in ("ADMIN_EMAIL", "ADMIN_PASSWORD"):
-        assert secrets_env.get(k), f"{k} absent du fichier de secrets"
+        if not secrets_env.get(k):
+            pytest.fail(f"{k} absent du fichier de secrets", pytrace=False)
     r = login(anon_key, secrets_env["ADMIN_EMAIL"], secrets_env["ADMIN_PASSWORD"])
     assert r.status_code == 200, f"connexion admin → {r.status_code} (SPEC-003.4)"
     api = Api(anon_key, r.json()["access_token"])
@@ -287,7 +342,7 @@ class Fabrique:
         email = email_unique()
         nom = nom or f"Testeur {self.n} {email[2:10]}"
         r = signup(self.anon_key, email, MOT_DE_PASSE_TEST, nom)
-        assert r.status_code in (200, 201), f"signup → {r.status_code} {r.text[:300]}"
+        assert r.status_code in (200, 201), f"signup → {r.status_code} {extrait(r, 300)}"
         token = r.json().get("access_token")
         assert token, "signup sans session immédiate (SPEC-001.11 : autoconfirm attendu)"
         api = Api(self.anon_key, token)
@@ -298,7 +353,7 @@ class Fabrique:
 
     def activer(self, user_id, actif=True):
         r = self.admin.rpc("admin_set_active", p_user=user_id, p_active=actif)
-        assert 200 <= r.status_code < 300, f"admin_set_active → {r.status_code} {r.text[:300]}"
+        assert 200 <= r.status_code < 300, f"admin_set_active → {r.status_code} {extrait(r, 300)}"
 
 
 @pytest.fixture(scope="session")
@@ -328,7 +383,7 @@ def inactif(fabrique):
 
 def compte_admin(admin, user_id=None, email=None):
     r = admin.rpc("admin_list_accounts")
-    assert r.status_code == 200, f"admin_list_accounts → {r.status_code} {r.text[:300]}"
+    assert r.status_code == 200, f"admin_list_accounts → {r.status_code} {extrait(r, 300)}"
     rows = r.json()
     if user_id:
         rows = [x for x in rows if x.get("id") == user_id]
@@ -346,5 +401,5 @@ def jeu(fabrique):
     t = a.create_task(title=f"jeu-{uuid.uuid4().hex[:8]}", estimate=3)
     e = a.log(t["id"], 30)
     r = b.rpc("offer_help", p_task=t["id"])
-    assert 200 <= r.status_code < 300, f"offer_help (jeu) → {r.status_code} {r.text[:300]}"
+    assert 200 <= r.status_code < 300, f"offer_help (jeu) → {r.status_code} {extrait(r, 300)}"
     return {"a": a, "b": b, "task": t, "entry": e, "proposal": un(r.json()) if r.content else None}

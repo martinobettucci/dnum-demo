@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
-"""Seed idempotent du compte administrateur (ADR-003, SPEC-003.4/.5/.6).
+"""Seed du compte administrateur (ADR-003, ADR-012, SPEC-003.4/.5/.6/.10/.11/.12).
 
 Exécuté par ./dev dans le service one-shot `seed` (image python:3.13.1-slim, réseau interne de la
-pile). Assure, via l'API d'administration GoTrue INTERNE ($GOTRUE_URL, défaut http://auth:9999),
-que le compte $ADMIN_EMAIL existe, e-mail confirmé, mot de passe = $ADMIN_PASSWORD.
+pile), via l'API d'administration GoTrue INTERNE ($GOTRUE_URL, défaut http://auth:9999).
+
+Comportement (ADR-012, création seule) :
+  - compte $ADMIN_EMAIL absent      → création (e-mail confirmé, mot de passe = $ADMIN_PASSWORD) ; seule écriture du script ;
+  - compte existant, e-mail confirmé → aucune écriture (le mot de passe de la base fait foi) ;
+  - compte existant, e-mail non confirmé → rc≠0, message sans secret, aucune modification (correction manuelle).
+
 La promotion du profil (role='admin', is_active=true) est faite ensuite par `db.sh promote-admin`.
-N'affiche jamais de secret. Bibliothèque standard uniquement.
+N'affiche jamais de secret. Ne lit ni n'écrit le fichier de secrets. Bibliothèque standard uniquement.
 """
 import json, os, sys, time, urllib.error, urllib.request
 
@@ -17,6 +22,7 @@ HDR = {"Authorization": f"Bearer {KEY}", "apikey": KEY, "Content-Type": "applica
 
 
 def appel(methode, chemin, corps=None):
+    """Appel à l'API GoTrue. Seuls GET (lecture) et POST (création, branche « absent ») sont employés."""
     req = urllib.request.Request(URL + chemin, method=methode, headers=HDR,
                                  data=json.dumps(corps).encode() if corps is not None else None)
     try:
@@ -57,17 +63,19 @@ def main():
     attendre()
     u = chercher()
     if u is None:
-        code, data = appel("POST", "/admin/users", {
+        # Seule branche qui écrit : compte absent → création.
+        code, _ = appel("POST", "/admin/users", {
             "email": EMAIL, "password": PASSWORD, "email_confirm": True,
             "user_metadata": {"display_name": "Administrateur"}})
         if code not in (200, 201):
             sys.exit(f"seed : création du compte administrateur refusée (HTTP {code})")
         print(f"seed : compte administrateur créé ({EMAIL})")
-    else:
-        code, _ = appel("PUT", f"/admin/users/{u['id']}", {"password": PASSWORD, "email_confirm": True})
-        if code != 200:
-            sys.exit(f"seed : mise à jour du compte administrateur refusée (HTTP {code})")
-        print(f"seed : compte administrateur à jour ({EMAIL})")
+        return
+    # Compte existant : aucune écriture (ADR-012, SPEC-003.10). Un compte non confirmé est refusé (SPEC-003.11).
+    if not (u.get("email_confirmed_at") or u.get("confirmed_at")):
+        sys.exit("seed : compte administrateur existant sans e-mail confirmé ; correction manuelle requise "
+                 "(aucune modification effectuée)")
+    print(f"seed : compte administrateur existant, inchangé ({EMAIL})")
 
 
 if __name__ == "__main__":

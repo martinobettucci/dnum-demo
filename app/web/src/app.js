@@ -66,6 +66,17 @@ const $main = document.getElementById('contenu');
 const $menu = document.getElementById('menu');
 let moi = null; // { id, nom, actif, role }
 
+// SPEC-005.7 : message de confirmation, mémoire seule (ni URL ni stockage), affiché une fois sur la page visée.
+let annonceEnAttente = null; // { chemin, texte }
+const annoncer = (texte) => { annonceEnAttente = { chemin: parseRoute().chemin, texte }; };
+function enTeteAnnonce(chemin) {
+  const a = annonceEnAttente && annonceEnAttente.chemin === chemin ? annonceEnAttente.texte : null;
+  annonceEnAttente = null;
+  return a ? el('p', { class: 'info', role: 'status' }, a) : null;
+}
+// SPEC-005.62 : termes des recherches d'administration, conservés pendant les actions de la page.
+let recherche = { attente: '', actifs: '' };
+
 function parseRoute() {
   const h = window.location.hash.replace(/^#\/?/, '');
   const [chemin, requete = ''] = h.split('?');
@@ -110,6 +121,8 @@ async function rafraichir(focus = false) {
     return afficherSansMenu(pageAttente(), focus);
   }
   const c = r.chemin;
+  if (annonceEnAttente && annonceEnAttente.chemin !== c) annonceEnAttente = null; // effacé à la navigation suivante
+  if (c !== 'admin') recherche = { attente: '', actifs: '' };
   if (c === '' || c === 'connexion' || c === 'inscription' || c === 'attente') return aller('tableau');
   if (c === 'admin' && m.role !== 'admin') return aller('tableau');
   const pages = {
@@ -316,7 +329,7 @@ async function pageMesTaches() {
     const desc = el('textarea', { id: 'n-desc', name: 'description', maxlength: 4000 });
     const est = el('input', { id: 'n-est', name: 'estimation', inputmode: 'decimal', required: true });
     const ech = el('input', { id: 'n-ech', type: 'date', name: 'echeance' });
-    return el('details', {},
+    return el('details', { class: 'depliable' },
       el('summary', {}, 'Nouvelle tâche'),
       el('form', {
         class: 'etroit', novalidate: true,
@@ -411,10 +424,10 @@ async function pageMesTaches() {
     el('button', { type: 'submit' }, 'Enregistrer'));
   };
 
-  const formulaireTransfert = (t, rpc, libelle, bouton) => {
+  const formulaireTransfert = (t, rpc, libelle, bouton, texteAnnonce) => {
     const erreur = el('p', { class: 'erreur', role: 'alert' });
     const sel = choix(`${rpc}-${t.id}`);
-    return el('details', {},
+    return el('details', { class: 'depliable' },
       el('summary', {}, libelle),
       collegues.data.length === 0
         ? el('p', { class: 'discret' }, 'Aucun collègue actif.')
@@ -425,6 +438,10 @@ async function pageMesTaches() {
             erreur.textContent = '';
             const { error } = await sb.rpc(rpc, { p_task: t.id, p_to: sel.value });
             if (error) { erreur.textContent = messageErreur(error); return; }
+            if (texteAnnonce) {
+              const cible = collegues.data.find((x) => x.user_id === sel.value);
+              annoncer(texteAnnonce((cible && cible.display_name) || 'Collègue', t.title));
+            }
             rafraichir();
           },
         }, champ(`${rpc}-${t.id}`, 'Collègue', sel), erreur, el('button', { type: 'submit' }, bouton)));
@@ -434,12 +451,14 @@ async function pageMesTaches() {
     el('h2', {}, t.title),
     el('p', { class: 'tache-meta' },
       `Statut : ${STATUT[t.status]} · Estimation : ${fmtH(t.estimate_hours)} · Temps logué : ${fmtH(t.logged_hours)} · Reste : ${fmtH(t.remaining_hours)}`),
-    el('details', {}, el('summary', {}, 'Modifier'), formulaireModifier(t)),
-    el('details', {}, el('summary', {}, 'Loguer du temps'), formulaireTemps(t)),
+    el('details', { class: 'depliable' }, el('summary', {}, 'Modifier'), formulaireModifier(t)),
+    el('details', { class: 'depliable' }, el('summary', {}, 'Loguer du temps'), formulaireTemps(t)),
     formulaireTransfert(t, 'reassign_task', 'Réaffecter', 'Valider'),
-    formulaireTransfert(t, 'request_help', "Demander de l'aide", 'Valider')));
+    formulaireTransfert(t, 'request_help', "Demander de l'aide", 'Valider',
+      (nom, titre) => `Demande d'aide envoyée à ${nom} pour la tâche « ${titre} ».`)));
 
   return el('section', {},
+    enTeteAnnonce('mes-taches'),
     el('h1', {}, 'Mes tâches'),
     formulaireNouvelle(),
     taches.data.length === 0
@@ -456,20 +475,21 @@ async function pageCollegue(id) {
   for (const r of [taches, membre]) if (r.error) throw r.error;
   const nom = (membre.data && membre.data.display_name) || 'Collègue';
   const zone = el('p', { class: 'erreur', role: 'alert' });
-  const info = el('p', { class: 'info', role: 'status' });
   const proposer = (t) => el('button', {
     type: 'button',
     onclick: async () => {
-      zone.textContent = ''; info.textContent = '';
+      zone.textContent = '';
       const { error } = await sb.rpc('offer_help', { p_task: t.id });
       if (error) { zone.textContent = messageErreur(error); return; }
-      info.textContent = 'Proposition envoyée.';
+      annoncer(`Proposition envoyée à ${nom} pour la tâche « ${t.title} ».`);
+      rafraichir();
     },
   }, 'Proposer mon aide');
   return el('section', {},
+    enTeteAnnonce(`collegue/${id}`),
     el('h1', {}, `Tâches de ${nom}`),
     el('p', { class: 'discret' }, 'Lecture seule.'),
-    zone, info,
+    zone,
     taches.data.length === 0
       ? el('p', { class: 'discret' }, 'Aucune tâche.')
       : el('ul', { class: 'liste' }, taches.data.map((t) => el('li', {},
@@ -525,21 +545,45 @@ async function pagePropositions() {
 }
 
 // ------------------------------------------------------------------ administration (SPEC-005.60, .61)
+// SPEC-005.62 : insensible à la casse et aux accents ; chaque mot du terme doit figurer dans le nom ou l'e-mail.
+const normaliser = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+function correspond(compte, terme) {
+  const mots = normaliser(terme).split(/\s+/).filter(Boolean);
+  if (mots.length === 0) return true;
+  const texte = normaliser(`${compte.display_name} ${compte.email}`);
+  return mots.every((m) => texte.includes(m));
+}
+
 async function pageAdmin() {
   const { data, error } = await sb.rpc('admin_list_accounts');
   if (error) throw error;
   const zone = el('p', { class: 'erreur', role: 'alert' });
   const attente = data.filter((c) => !c.is_active);
   const actifs = data.filter((c) => c.is_active);
+  let confirmation = null; // id du compte dont la désactivation attend confirmation (SPEC-005.63)
 
-  const basculer = (id, active) => async () => {
+  const basculer = (c, active) => async () => {
     zone.textContent = '';
-    const { error: e } = await sb.rpc('admin_set_active', { p_user: id, p_active: active });
-    if (e) { zone.textContent = messageErreur(e); return; }
+    const { error: e } = await sb.rpc('admin_set_active', { p_user: c.id, p_active: active });
+    if (e) { confirmation = null; zone.textContent = messageErreur(e); rendreListes(); return; }
+    if (!active) annoncer(`Le compte de ${c.display_name} est désactivé.`);
     rafraichir();
   };
 
-  // colonnes : [titre, fonction(compte) -> contenu] ; action : fonction(compte) -> bouton ou null
+  const ouvrir = (id) => {
+    confirmation = id;
+    rendreListes();
+    const b = document.getElementById(`adm-annuler-${id}`);
+    if (b) b.focus();
+  };
+  const fermer = (id) => {
+    confirmation = null;
+    rendreListes();
+    const b = document.getElementById(`adm-desact-${id}`);
+    if (b) b.focus();
+  };
+
+  // colonnes : [titre, fonction(compte) -> contenu] ; action : fonction(compte) -> contenu ou null
   const tableau = (lignes, colonnes, action) => el('table', {},
     el('thead', {}, el('tr', {},
       [...colonnes.map(([titre]) => titre), ...(action ? [''] : [])].map((t) => el('th', { scope: 'col' }, t)))),
@@ -547,26 +591,92 @@ async function pageAdmin() {
       [...colonnes.map(([, rendu]) => rendu(c)), ...(action ? [action(c)] : [])]
         .map((contenu) => el('td', {}, contenu))))));
 
+  // SPEC-005.63 : bouton « Désactiver » puis bloc de confirmation (focus sur « Annuler », Échap ferme)
+  const boutonDesactiver = (c) => {
+    if (c.role === 'admin' || c.id === moi.id) return null;
+    const ouvert = confirmation === c.id;
+    return el('div', {},
+      el('button', {
+        type: 'button', class: 'secondaire', id: `adm-desact-${c.id}`,
+        'aria-expanded': ouvert ? 'true' : 'false',
+        onclick: () => (ouvert ? fermer(c.id) : ouvrir(c.id)),
+      }, 'Désactiver'),
+      ouvert
+        ? el('div', {
+          role: 'group', class: 'confirmation', 'aria-labelledby': `adm-texte-${c.id}`,
+          onkeydown: (ev) => { if (ev.key === 'Escape') fermer(c.id); },
+        },
+        el('p', { id: `adm-texte-${c.id}` },
+          `Désactiver le compte de ${c.display_name} ? Cette personne ne verra plus les données de l'équipe.`),
+        el('button', { type: 'button', class: 'secondaire', id: `adm-annuler-${c.id}`, onclick: () => fermer(c.id) }, 'Annuler'),
+        ' ',
+        el('button', { type: 'button', onclick: basculer(c, false) }, 'Confirmer la désactivation'))
+        : null);
+  };
+
+  // SPEC-005.62 : sans terme, la liste complète ; avec un terme sans résultat, le message exact.
+  const rendreListe = (cle, comptes, colonnes, action, vide, horsRecherche) => {
+    const terme = recherche[cle].trim();
+    const trouves = comptes.filter((c) => correspond(c, terme));
+    if (terme && trouves.length === 0) return el('p', { role: 'status' }, horsRecherche(terme));
+    if (trouves.length === 0) return el('p', { class: 'discret' }, vide);
+    return tableau(trouves, colonnes, action);
+  };
+
   const colNom = ['Nom', (c) => c.display_name];
   const colMail = ['E-mail', (c) => c.email];
+  const corps = { attente: el('div'), actifs: el('div') };
 
-  return el('section', {},
+  const rendreListes = () => {
+    corps.attente.replaceChildren(rendreListe('attente', attente,
+      [colNom, colMail, ['Inscription', (c) => fmtDate(c.created_at)]],
+      (c) => el('button', { type: 'button', onclick: basculer(c, true) }, 'Activer'),
+      'Aucun compte en attente.',
+      (t) => `Aucun compte en attente ne correspond à « ${t} ».`));
+    corps.actifs.replaceChildren(rendreListe('actifs', actifs,
+      [colNom, colMail, ['Rôle', (c) => (c.role === 'admin' ? 'Administrateur' : 'Membre')]],
+      boutonDesactiver,
+      'Aucun compte actif.',
+      (t) => `Aucun compte actif ne correspond à « ${t} ».`));
+  };
+
+  // Le champ n'est pas dans un formulaire : Entrée ne soumet rien. Filtrage à chaque saisie, focus conservé.
+  const champRecherche = (cle, id, libelle) => {
+    const saisie = el('input', { id, type: 'search', autocomplete: 'off' });
+    saisie.value = recherche[cle];
+    saisie.addEventListener('input', () => { recherche[cle] = saisie.value; rendreListes(); });
+    return el('div', { class: 'champ recherche' }, el('label', { for: id }, libelle), saisie);
+  };
+
+  const page = el('section', {},
+    enTeteAnnonce('admin'),
     el('h1', {}, 'Administration'),
     zone,
     el('h2', {}, 'Comptes en attente'),
-    attente.length === 0
-      ? el('p', { class: 'discret' }, 'Aucun compte en attente.')
-      : tableau(attente, [colNom, colMail, ['Inscription', (c) => fmtDate(c.created_at)]],
-        (c) => el('button', { type: 'button', onclick: basculer(c.id, true) }, 'Activer')),
+    champRecherche('attente', 'adm-recherche-attente', 'Rechercher dans les comptes en attente'),
+    corps.attente,
     el('h2', {}, 'Comptes actifs'),
-    actifs.length === 0
-      ? el('p', { class: 'discret' }, 'Aucun compte actif.')
-      : tableau(actifs, [colNom, colMail, ['Rôle', (c) => (c.role === 'admin' ? 'Administrateur' : 'Membre')]],
-        (c) => (c.role === 'admin' || c.id === moi.id
-          ? null
-          : el('button', { type: 'button', class: 'secondaire', onclick: basculer(c.id, false) }, 'Désactiver'))));
+    champRecherche('actifs', 'adm-recherche-actifs', 'Rechercher dans les comptes actifs'),
+    corps.actifs);
+  rendreListes();
+  return page;
 }
 
 // ------------------------------------------------------------------ démarrage
+// Retour de recette (rapport-client, SPEC-005) : les formulaires dépliables se superposent sous leur résumé (style.css),
+// sans rien pousser. Un seul est déplié à la fois, pour que les superpositions ne s'empilent pas.
+document.addEventListener('toggle', (ev) => {
+  const d = ev.target;
+  if (!(d instanceof HTMLDetailsElement) || !d.classList.contains('depliable') || !d.open) return;
+  document.querySelectorAll('details.depliable[open]').forEach((autre) => { if (autre !== d) autre.open = false; });
+}, true);
+// SPEC-005.6 : la marge de défilement égale la hauteur réelle de la barre fixe (repli : style.css).
+const $entete = document.querySelector('.entete');
+if ($entete && 'ResizeObserver' in window) {
+  new ResizeObserver(() => {
+    document.documentElement.style.scrollPaddingTop = `${$entete.offsetHeight}px`;
+  }).observe($entete);
+}
+
 window.addEventListener('hashchange', () => rafraichir(true));
 rafraichir(false);

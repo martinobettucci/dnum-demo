@@ -150,6 +150,7 @@ que l'hôte seul peut faire : elles ne sont pas des critères fonctionnels et ne
   le runner répond `200` ([T]). L'application répond `200` sur `http://10.77.0.25:<APP_PORT>/` (8080 pour `dev`) ;
   `ss -ltn` montre cette adresse seule pour ce port, sans écouteur `127.0.0.1` ni `0.0.0.0` ([R]). La sortie de
   `./dev` n'affiche aucune URL `127.0.0.1` ([P]). Le runner ne joint pas `10.77.0.25` (ADR-007 §4).
+  **Écart accepté (arbitrage du chef de projet, tour 3) :** la partie « après `reset` » n'est pas vérifiée tant que la pile `dev` est gelée ; elle reste exigible à la levée du gel.
 - **CA-002-2** [T] + [P] — Toutes les images de la pile sont épinglées par tag exact (aucun `latest`). Les images
   construites portent le tag de leur pile (`devenv/app:dev` pour `dev`, `devenv/app:service` pour `service`,
   ADR-008). Aucun secret (mot de passe, clé JWT, clé de service, JWT) n'est présent dans les fichiers suivis par git.
@@ -229,12 +230,12 @@ que l'hôte seul peut faire : elles ne sont pas des critères fonctionnels et ne
 ### US-11 / US-12 / US-13 — Propositions d'entraide (Should)
 - **CA-002-27** [C] — *(réécrit au tour 3 : message de confirmation)* Sur une tâche non terminée d'un collègue, le bouton
   « Proposer mon aide » crée une proposition. Après le clic, un message apparaît à l'écran, sans recharger la page, et
-  nomme le collègue et la tâche : « Proposition d'aide envoyée à <nom du collègue> pour « <titre de la tâche> ». »
-  Le seul texte « Proposition envoyée », sans nom de tâche, ne satisfait pas ce critère. Le collègue voit la proposition
+  affiche le texte exact M-1 de SPEC-005 : « Proposition envoyée à <nom du collègue> pour la tâche « <titre de la tâche> ». »
+  Le texte « Proposition envoyée » seul, sans nom du collègue ni de tâche, ne satisfait pas ce critère. Le collègue voit la proposition
   dans « Propositions reçues » avec le nom du proposant et la tâche.
 - **CA-002-28** [C] — *(réécrit au tour 3 : message de confirmation)* Sur l'une de ses tâches non terminées, le bouton
   « Demander de l'aide » ouvre le choix d'un collègue activé. Après validation, un message apparaît à l'écran, sans
-  recharger la page, et nomme le collègue et la tâche : « Demande d'aide envoyée à <nom du collègue> pour
+  recharger la page, et affiche le texte exact M-2 de SPEC-005 : « Demande d'aide envoyée à <nom du collègue> pour la tâche
   « <titre de la tâche> ». » Ce message reste visible sans clic supplémentaire, jusqu'à ce que la page change. Le
   collègue voit la demande dans « Propositions reçues ».
 - **CA-002-29** [C] — Le destinataire clique « Accepter » : la tâche est affectée à celui qui la prend (le proposant
@@ -251,11 +252,7 @@ que l'hôte seul peut faire : elles ne sont pas des critères fonctionnels et ne
   `./dev deploy` effectué sans `./dev reset` ; le mot de passe admin n'est pas régénéré (SPEC-004.3, SPEC-003.5).
 
 ### US-15 — Désactivation (Could)
-- **CA-002-34** [C] — *(complété au tour 3 : confirmation)* Dans « Administration », « Comptes actifs », l'admin clique
-  « Désactiver » sur un compte : une fenêtre demande « Désactiver ce compte ? » avec les boutons « Confirmer » et
-  « Annuler ». « Annuler » (ou Échap) ferme la fenêtre ; le compte reste actif, la liste ne change pas. « Confirmer »
-  désactive le compte : il n'apparaît plus comme compte actif, et ce compte, reconnecté, ne voit plus que l'écran
-  « Compte en attente d'activation ». Sur la ligne de son propre compte, l'admin ne voit pas de bouton « Désactiver ».
+- **CA-002-34** [C] — *(confirmation retirée au tour 3 : elle est traitée par CA-002-39)* Dans « Administration », « Comptes actifs », l'admin désactive un compte (bouton « Désactiver », puis validation selon CA-002-39) : le compte n'apparaît plus comme compte actif et, reconnecté, ne voit plus que l'écran « Compte en attente d'activation ». Sur la ligne de son propre compte, l'admin ne voit pas de bouton « Désactiver ».
 
 ### US-16 — Tâches du jour (Could)
 - **CA-002-35** [C] — Une tâche peut recevoir une échéance facultative ; un filtre « Aujourd'hui » du tableau de bord ne
@@ -269,24 +266,31 @@ que l'hôte seul peut faire : elles ne sont pas des critères fonctionnels et ne
   comptes, tâches, temps et propositions ([T]). `./dev reset service` sans `--confirmer-destruction` est refusé sans rien
   détruire ([R]). Une restauration vers un niveau de migration différent est refusée ([T]).
 
+### Arbitrages du chef de projet (tour 3)
+
+| # | Arbitrage | Effet dans ce document |
+|---|---|---|
+| A1 | SPEC-005 fait foi pour les textes (M-1 à M-6, SPEC-005 § « Messages exacts »). | CA-002-27, 28, 38 et 39 alignés sur les textes exacts ; recette étapes 5, 7, 9, 10, 12 et 18.1 alignées. CA-002-38 aligné aussi sur la règle de SPEC-005.62 (deux champs, correspondance par mots), au-delà des seuls textes. |
+| A2 | Numérotation de l'architecte : 37 barre fixe, 38 recherche, 39 confirmation « Désactiver ». | CA-002-39 créé ; la confirmation est retirée de CA-002-34. Recette étape 18.1 et décompte de couverture mis à jour (28 critères [C]). |
+| A3 | « Réaffecter » et « Loguer du temps » restent **sans confirmation** : actions réversibles. | Aucun CA de confirmation pour ces deux actions (points ouverts 1 et 2 de SPEC-005 clos pour ces deux actions). « Modifier » n'est pas arbitré : point toujours ouvert. |
+| A4 | CA-002-1, partie « après `reset` » : **écart accepté** tant que la pile `dev` est gelée. | Mention ajoutée à CA-002-1 ; la partie reste exigible à la levée du gel. |
+| A5 | Seed (ADR-012) : en pile service, le seed crée l'admin s'il est absent et ne réécrit jamais un mot de passe existant. | CA-002-40 créé (US-2, [T] + [P]), rattaché à SPEC-003.10 à 003.12. |
+
 ### Retours de recette, tour 3 (rattachés aux stories existantes)
 
-Modifications du tour 3 : CA-002-27, CA-002-28 et CA-002-34 réécrits (messages et confirmation) ; CA-002-37 et
-CA-002-38 créés. Statut : **non recettés**. Le gel de la pile `dev` est actif : aucun `deploy`, `reset` ou `test`
+Modifications du tour 3 : CA-002-27, CA-002-28, CA-002-34 et CA-002-38 réécrits ; CA-002-37 et CA-002-39 créés ;
+CA-002-40 créé (arbitrage A5). Statut : **non recettés**. Le gel de la pile `dev` est actif : aucun `deploy`, `reset` ou `test`
 n'est lancé pour vérifier ces critères avant levée du gel. Priorité proposée : CA-002-38 dans la boucle (US-4, Must) ;
-CA-002-37 (Should) livré si le reste est vert.
+CA-002-37 (Should) livré si le reste est vert. CA-002-40 (US-2, Must) est réalisé avec le seed ; CA-002-39 (Could) suit CA-002-34.
 
 - **CA-002-37** [C] — *(créé au tour 3, rattaché à US-9 : interface commune)* Sur toute page connectée (tableau de bord,
   « Mes tâches », « Administration », tâches d'un collègue), la barre du haut (nom de l'application, liens de navigation,
   déconnexion) reste affichée en haut de l'écran quand la page défile. Vérification : sur une page plus longue que
   l'écran (zoom du navigateur à 200 % ou 300 % avec Ctrl + « + »), la barre reste visible après défilement à la molette
   ; un lien de la barre, activé pendant le défilement, fonctionne toujours.
-- **CA-002-38** [C] — *(créé au tour 3, rattaché à US-4 : listes d'administration)* Dans « Administration », un champ
-  « Rechercher » est placé au-dessus des listes « Comptes en attente » et « Comptes actifs ». Taper un nom ou une partie
-  d'e-mail, sans distinction de majuscules, filtre les deux listes pendant la saisie ou après Entrée ; seuls les comptes
-  correspondants restent affichés, avec leurs boutons « Activer » ou « Désactiver ». Effacer le champ rétablit les listes
-  complètes. Si aucun compte ne correspond, la liste affiche « Aucun compte ne correspond à la recherche ». Le champ
-  est atteint à la touche Tab depuis le haut de la page d'administration.
+- **CA-002-38** [C] — *(créé au tour 3, rattaché à US-4 : listes d'administration ; textes et règle alignés sur SPEC-005.62, M-5 et M-6)* Dans « Administration », deux champs de recherche, libellés « Rechercher dans les comptes en attente » et « Rechercher dans les comptes actifs », sont placés chacun au-dessus de sa liste ; chacun ne filtre que sa liste. Taper un nom ou une partie d'e-mail, sans distinction de majuscules, filtre la liste pendant la saisie : seuls les comptes correspondants restent affichés, avec leurs boutons « Activer » ou « Désactiver ». Le terme est découpé en mots : un compte correspond si chaque mot figure dans son nom ou son e-mail. Effacer le champ rétablit la liste complète. Si aucun compte ne correspond, la liste affiche « Aucun compte en attente ne correspond à « <terme> ». » (liste d'attente) ou « Aucun compte actif ne correspond à « <terme> ». » (liste active). Chacun des deux champs est atteint à la touche Tab depuis le haut de la page d'administration.
+- **CA-002-39** [C] — *(créé au tour 3, rattaché à US-15 : confirmation de la désactivation, SPEC-005.63, M-3 et M-4)* Clic sur « Désactiver » : sous la ligne du compte s'ouvre un bloc affichant le texte exact « Désactiver le compte de <nom> ? Cette personne ne verra plus les données de l'équipe. », avec les boutons « Confirmer la désactivation » et « Annuler ». Le focus est placé sur « Annuler ». « Annuler » ferme le bloc : le compte reste actif, la liste ne change pas. « Confirmer la désactivation » désactive le compte et affiche le message exact « Le compte de <nom> est désactivé. ». Aucune fenêtre native ni modale n'est utilisée. (Échap ferme aussi le bloc : recommandé par SPEC-005.63, non exigé ici.)
+- **CA-002-40** [T] + [P] — *(créé au tour 3, rattaché à US-2 : seed sans écrasement, ADR-012, SPEC-003.10 et 003.11)* Le seed crée le compte `ADMIN_EMAIL` seulement s'il est absent. Quand il existe, il ne modifie ni son mot de passe, ni son e-mail, ni sa confirmation : après changement du mot de passe admin en une valeur de test `X`, un nouveau passage du seed laisse la connexion avec `X` réussie et la connexion avec `ADMIN_PASSWORD` refusée ; `encrypted_password` et `updated_at` sont inchangés. Si le compte existe sans e-mail confirmé, le seed s'arrête avec un code de retour non nul, sans secret dans sa sortie et sans rien modifier. [T] : `tests/test_003_admin.py`. [P] : dans `tools/deploy/seed.py`, tout appel `PUT`, `PATCH` ou `DELETE` vers `/admin/users` figure dans la seule branche « compte absent ». [R] : couvert par CA-002-33 (`./dev deploy` sans `reset`).
 
 ## 5. Hors périmètre explicite (itération 002)
 

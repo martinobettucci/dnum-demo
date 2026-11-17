@@ -1,6 +1,6 @@
 {
   "iteration": "002",
-  "date": "2026-11-17T12:30:27",
+  "date": "2026-11-17T13:17:06",
   "pile_demarree": true,
   "results": [
     {
@@ -53,9 +53,9 @@
       "REF": "SPEC-003.3 | SPEC-003.6 | SPEC-003.7 | SPEC-006 §1 | CA-002-2",
       "QUAND": "always",
       "file": "05-env-secrets-valeurs-absentes.sh",
-      "status": "respectee",
-      "rc": 0,
-      "output": "5 valeur(s) secrète(s) de 1 fichier(s) absentes de 148 fichiers (iterations/ comprises) et de deploy.log"
+      "status": "violee",
+      "rc": 1,
+      "output": "2 fuite(s) de secret : iterations/002/tests/junit.xml contient dev.env:ADMIN_PASSWORD ; iterations/002/tests/junit.xml contient dev.env:JWT_SECRET"
     },
     {
       "POLICY": "ENV-devenv-ignore",
@@ -185,8 +185,8 @@
     }
   ],
   "synthese": {
-    "respectee": 18,
-    "violee": 2,
+    "respectee": 17,
+    "violee": 3,
     "non_applicable": 0
   }
 }

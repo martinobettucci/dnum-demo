@@ -13,7 +13,7 @@ import datetime, hashlib, hmac, json, uuid
 
 import pytest
 
-from conftest import PILE, WORKSPACE, compte_admin, connecter, signup
+from conftest import PILE, WORKSPACE, compte_admin, connecter, extrait, signup
 
 ITER = (WORKSPACE / "iterations" / "CURRENT").read_text().strip() \
     if (WORKSPACE / "iterations" / "CURRENT").exists() else "000"
@@ -72,10 +72,12 @@ def test_persistance_relire(secrets_env, anon_key, admin):
     if not [d for d in derniers_deploiements() if d > jeu["ecrit_le_deploy"]]:
         pytest.skip("aucun ./dev deploy depuis l'écriture du jeu marqué")
     # mot de passe admin non régénéré (la connexion admin a réussi via la fixture `admin`)
-    assert empreinte(secrets_env["ADMIN_PASSWORD"]) == jeu["admin_empreinte"], \
-        "ADMIN_PASSWORD a changé depuis l'écriture du jeu"
-    assert len(compte_admin(admin, email=secrets_env["ADMIN_EMAIL"])) == 1
-    if jeu["membre_email"] != secrets_env["ADMIN_EMAIL"]:
+    mot_de_passe_inchange = empreinte(secrets_env["ADMIN_PASSWORD"]) == jeu["admin_empreinte"]
+    assert mot_de_passe_inchange, "ADMIN_PASSWORD a changé depuis l'écriture du jeu"
+    admin_email = secrets_env["ADMIN_EMAIL"]
+    nb_admin = len(compte_admin(admin, email=admin_email))
+    assert nb_admin == 1, f"{nb_admin} compte(s) pour ADMIN_EMAIL"
+    if jeu["membre_email"] != admin_email:
         acteur = connecter(anon_key, jeu["membre_email"], mdp_derive(secrets_env, jeu["membre_email"]))
         assert acteur.id == jeu["membre_id"]
         assert acteur.status()["is_active"] is True, "activation perdue"
@@ -113,7 +115,7 @@ def test_persistance_ecrire(secrets_env, anon_key, admin, fabrique):
     else:
         email = f"persist-{uuid.uuid4()}@test.invalid"
         r = signup(anon_key, email, mdp_derive(secrets_env, email), marque)
-        assert r.status_code in (200, 201), r.text[:200]
+        assert r.status_code in (200, 201), extrait(r, 200)
         acteur = connecter(anon_key, email, mdp_derive(secrets_env, email))
         fabrique.activer(acteur.id)
     t = acteur.create_task(title=marque, estimate=8)
@@ -121,7 +123,7 @@ def test_persistance_ecrire(secrets_env, anon_key, admin, fabrique):
     if PILE != "service":
         aide = fabrique(actif=True)
         r = aide.rpc("offer_help", p_task=t["id"])
-        assert 200 <= r.status_code < 300, r.text[:200]
+        assert 200 <= r.status_code < 300, extrait(r, 200)
         proposal_id = r.json() if isinstance(r.json(), str) else r.json()[0]
     FICHIER.parent.mkdir(parents=True, exist_ok=True)
     FICHIER.write_text(json.dumps({
@@ -144,7 +146,7 @@ def test_pile_service_repond_avec_ses_propres_secrets(admin, secrets_env):
     dev = WORKSPACE / ".devenv" / "secrets" / "dev.env"
     if dev.exists():
         from conftest import lire_env
-        assert lire_env(dev).get("JWT_SECRET") != secrets_env["JWT_SECRET"], \
-            "pile service et pile dev partagent le même JWT_SECRET"
+        partage = lire_env(dev).get("JWT_SECRET") == secrets_env["JWT_SECRET"]
+        assert not partage, "pile service et pile dev partagent le même JWT_SECRET"
 
 
