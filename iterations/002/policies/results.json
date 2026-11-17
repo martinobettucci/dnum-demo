@@ -1,6 +1,6 @@
 {
   "iteration": "002",
-  "date": "2026-11-17T11:56:39",
+  "date": "2026-11-17T12:21:40",
   "pile_demarree": true,
   "results": [
     {
@@ -8,9 +8,9 @@
       "REF": "ENV | SPEC-001.2 | CA-002-2",
       "QUAND": "always",
       "file": "00-env-images-epinglees.sh",
-      "status": "respectee",
-      "rc": 0,
-      "output": "7 références d'image (FROM + image:) vérifiées, toutes épinglées par tag exact"
+      "status": "violee",
+      "rc": 1,
+      "output": "1 image(s) non épinglée(s) : stack/compose.service.yml: service app image: devenv/app:service"
     },
     {
       "POLICY": "ENV-dependances-epinglees",
@@ -44,9 +44,9 @@
       "REF": "ENV | ADR-002 | SPEC-006 §3.2 | CA-002-2",
       "QUAND": "always",
       "file": "04-env-npm-epinglees.sh",
-      "status": "violee",
-      "rc": 1,
-      "output": "app/web/package.json absent"
+      "status": "respectee",
+      "rc": 0,
+      "output": "2 dépendance(s) npm à version exacte, supabase-js 2.47.10 (package.json + lock), npm ci"
     },
     {
       "POLICY": "ENV-secrets-valeurs-absentes",
@@ -143,9 +143,9 @@
       "REF": "SPEC-001.1 | SPEC-001.2 | ADR-001 | CA-002-1",
       "QUAND": "always",
       "file": "20-stack-services.sh",
-      "status": "violee",
-      "rc": 1,
-      "output": "compose non conforme : services manquants : auth, db, rest"
+      "status": "respectee",
+      "rc": 0,
+      "output": "services : app, auth, client, db, migrate, rest, runner, seed — conformes (images db/auth/rest contractuelles, aucun composant exclu)"
     },
     {
       "POLICY": "STACK-ports",
@@ -154,25 +154,25 @@
       "file": "21-stack-ports.sh",
       "status": "violee",
       "rc": 1,
-      "output": "ports non conformes : compose.yml : app non publié sur ${APP_LAN_IP:-10.77.0.25}"
+      "output": "ports non conformes : compose.yml : app non publié sur 127.0.0.1"
     },
     {
       "POLICY": "DB-migrations-versionnees",
       "REF": "SPEC-001.13 | SPEC-002 | CA-002-1 | CA-002-33",
       "QUAND": "always",
       "file": "22-db-migrations-versionnees.sh",
-      "status": "violee",
-      "rc": 1,
-      "output": "app/db/migrations/ absent"
+      "status": "respectee",
+      "rc": 0,
+      "output": "5 migration(s) versionnée(s) 001→005, tables contractuelles créées, schéma auth intact"
     },
     {
       "POLICY": "DB-rls-privileges-statique",
       "REF": "SPEC-002.1 | SPEC-002 §5-6 | ADR-005 | CA-002-11",
       "QUAND": "always",
       "file": "23-db-rls-privileges-statique.sh",
-      "status": "violee",
-      "rc": 1,
-      "output": "aucune migration app/db/migrations/*.sql à analyser"
+      "status": "respectee",
+      "rc": 0,
+      "output": "4 table(s) public à RLS activée et forcée, aucun grant à anon, EXECUTE révoqué de PUBLIC/anon sur 7 fonction(s) public"
     },
     {
       "POLICY": "GARDE-FOU-mise-en-service",
@@ -185,8 +185,8 @@
     }
   ],
   "synthese": {
-    "respectee": 7,
-    "violee": 12,
+    "respectee": 10,
+    "violee": 9,
     "non_applicable": 1
   }
 }

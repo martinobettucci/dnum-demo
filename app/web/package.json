@@ -1,0 +1,16 @@
+{
+  "name": "devenv-app-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Interface web de l'application (ADR-002, ADR-006 §2) : dist/app.js et dist/vendor/supabase.js",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.47.10"
+  },
+  "devDependencies": {
+    "esbuild": "0.24.2"
+  }
+}

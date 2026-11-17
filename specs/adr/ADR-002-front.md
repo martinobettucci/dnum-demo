@@ -15,9 +15,11 @@ Statut : accepté (itération 002) — couvre CA-002-2, CA-002-3 et l'ensemble d
   de maintenance ; suffisant pour le volume fonctionnel.
 - **Dépendances npm (versions exactes, `package-lock.json` commité, `npm ci`)** :
   `@supabase/supabase-js@2.47.10` (seule dépendance d'exécution) et `esbuild@0.24.2`
-  (dépendance de build, regroupe le JS en un fichier `app.js`).
+  (dépendance de build). **Amendé par ADR-006 §2** : deux fichiers sont produits. `app.js` contient
+  le code applicatif seul ; `vendor/supabase.js` contient `@supabase/supabase-js` seul et est importé
+  par `app.js`.
 - **Construction multi-étapes dans `app/Dockerfile`** :
-  1. `node:22.12.0-alpine` : `npm ci` puis `esbuild` → `dist/` ;
+  1. `node:22.12.0-alpine` : `npm ci` puis `esbuild` → `dist/` (`app.js`, `vendor/supabase.js`) ;
   2. `nginx:1.27.3-alpine` : copie de `dist/` + configuration passerelle (ADR-001).
   Aucune étape n'utilise d'outil de l'hôte.
 - **Configuration d'exécution** : l'URL Supabase est `window.location.origin` (même origine,

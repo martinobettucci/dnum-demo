@@ -1,11 +1,105 @@
 # Pile de développement JETABLE (volumes compris) : ./dev reset la détruit entièrement.
 # Seul le responsable-applicatif la démarre / l'arrête (./dev deploy | teardown | reset).
+# Contrat ./dev ↔ application : SPEC-004.11 à SPEC-004.16. Publication : SPEC-001.3 (ADR-007).
+# Tags des images construites : propres à la pile (ADR-008). Variables : fichier de secrets (./dev --env-file).
 name: devenv
 services:
+  # PostgreSQL 15 avec rôles Supabase. Aucun port publié (SPEC-001.3). Volume nommé db-data (SPEC-004.3).
+  db:
+    image: supabase/postgres:15.8.1.060
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./db-init/zz-roles-devenv.sh:/docker-entrypoint-initdb.d/zz-roles-devenv.sh:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "supabase_admin", "-d", "postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+      start_period: 10s
+
+  # GoTrue : inscription, connexion, JWT. API d'administration interne seulement (jamais relayée, SPEC-001.7).
+  # Débit : SPEC-001.14 (ADR-006 §1). Pas de GOTRUE_RATE_LIMIT_HEADER : tous les clients partagent l'IP de nginx.
+  auth:
+    image: supabase/gotrue:v2.170.0
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: "9999"
+      API_EXTERNAL_URL: ${APP_PUBLIC_URL:-http://${APP_LAN_IP:-10.77.0.25}:${APP_PORT}}
+      GOTRUE_SITE_URL: ${APP_PUBLIC_URL:-http://${APP_LAN_IP:-10.77.0.25}:${APP_PORT}}
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD:-}@db:5432/postgres
+      GOTRUE_JWT_SECRET: ${JWT_SECRET:-}
+      GOTRUE_JWT_EXP: "3600"
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: "false"
+      GOTRUE_MAILER_AUTOCONFIRM: "true"
+      GOTRUE_PASSWORD_MIN_LENGTH: "8"
+      GOTRUE_RATE_LIMIT_EMAIL_SENT: "1000"
+      GOTRUE_RATE_LIMIT_TOKEN_REFRESH: "1000"
+      GOTRUE_RATE_LIMIT_VERIFY: "1000"
+      GOTRUE_RATE_LIMIT_OTP: "1000"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:9999/health"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+
+  # PostgREST : schéma public seul (SPEC-001.12). Pas de healthcheck : image sans shell.
+  rest:
+    image: postgrest/postgrest:v12.2.8
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD:-}@db:5432/postgres
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET:-}
+      PGRST_DB_MAX_ROWS: "1000"
+
+  # One-shot (profil deploy) : migrations versionnées, appelé uniquement par ./dev (SPEC-004.11, SPEC-001.13).
+  migrate:
+    image: supabase/postgres:15.8.1.060
+    profiles: ["deploy"]
+    entrypoint: ["bash", "/ops/db.sh"]
+    env_file:
+      - path: ${DEVENV_SECRETS}
+        required: false   # absent avant le premier deploy : teardown/reset doivent rester possibles (SPEC-004.2)
+    volumes:
+      - ../tools/deploy:/ops:ro
+      - ../app/db/migrations:/migrations:ro
+
+  # One-shot (profil deploy) : compte administrateur via l'API GoTrue interne (SPEC-004.13, SPEC-003.5).
+  seed:
+    image: python:3.13.1-slim
+    profiles: ["deploy"]
+    command: ["python3", "/ops/seed.py"]
+    env_file:
+      - path: ${DEVENV_SECRETS}
+        required: false
+    environment:
+      GOTRUE_URL: http://auth:9999
+    volumes:
+      - ../tools/deploy:/ops:ro
+
+  # Passerelle unique et front (ADR-001, ADR-002). Seul service publié, sur l'adresse LAN (ADR-007).
   app:
     build: ../app
     image: devenv/app:dev
-    ports: ["127.0.0.1:${APP_PORT:-8080}:80"]
+    ports: ["${APP_LAN_IP:-10.77.0.25}:${APP_PORT}:80"]
+    environment:
+      SUPABASE_ANON_KEY: ${ANON_KEY:-}
+    depends_on:
+      - rest
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
       interval: 3s
@@ -37,3 +131,6 @@ services:
       - ../iterations:/iterations
     depends_on:
       app: { condition: service_healthy }
+
+volumes:
+  db-data:

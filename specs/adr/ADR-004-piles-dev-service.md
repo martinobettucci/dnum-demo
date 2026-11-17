@@ -2,6 +2,11 @@
 
 Statut : accepté (itération 002) — couvre CA-002-1, CA-002-33, CA-002-36 (Could).
 
+> **Amendements (tour 1 complément, 2026-11-17)** : la publication des ports suit ADR-007 (une adresse LAN par pile,
+> pas de `127.0.0.1`). Les images locales portent un tag par pile (`devenv/app:dev`, `devenv/app:service`, ADR-008).
+> La pile `service` est **retenue pour cette itération** par décision du chef de projet (statut Could levé dans
+> SPEC-004 ; `perimetre.md` à mettre à jour par le product-owner).
+
 ## Contexte
 - ADR-000 : la pile est jetable volumes compris. Le besoin ajoute une pile `service` exposée,
   à données persistantes avec sauvegarde (décision par défaut du chef de projet, révisable).

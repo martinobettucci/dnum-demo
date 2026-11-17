@@ -42,9 +42,13 @@ l'exploitation se fait par `psql` dans le conteneur `db` ; Studio ajouterait `pg
 surface d'attaque et un second port), Realtime, Storage, Edge Functions, imgproxy, Analytics,
 Vector, Supavisor, Inbucket/SMTP.
 
-Réseau : seul `app` publie un port (`APP_PORT`, défaut 8080), lié à `127.0.0.1` **et** à l'adresse
-LAN `10.77.0.25` (`APP_LAN_IP`), jamais à `0.0.0.0`. `db`, `auth`, `rest` ne publient aucun port.
+Réseau : seul `app` publie un port, lié à l'adresse LAN `10.77.0.25` (`APP_LAN_IP`), jamais à `0.0.0.0`.
+`db`, `auth`, `rest` ne publient aucun port.
 Le reverse proxy HTTPS de `dnum.lelabs.tech` (hors périmètre) visera `10.77.0.25:APP_PORT`.
+
+> **Amendement (ADR-007, itération 002 tour 1 complément)** : la publication sur `127.0.0.1` est supprimée. Sous Docker
+> rootless (driver `builtin`), publier le même port sur `127.0.0.1` et `10.77.0.25` échoue. Ports par pile : `dev` 8080,
+> `service` 8081. Dérogation à CA-002-1 à valider par le product-owner.
 
 Ordre de démarrage : `db` (sain) → `auth` (applique ses migrations du schéma `auth`, sain) →
 migrations applicatives (one-shot, SPEC-002) → `rest` (rechargement du cache de schéma par
