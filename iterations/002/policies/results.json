@@ -1,6 +1,6 @@
 {
   "iteration": "002",
-  "date": "2026-11-17T13:46:04",
+  "date": "2026-11-17T14:57:11",
   "pile_demarree": true,
   "results": [
     {
@@ -55,7 +55,7 @@
       "file": "05-env-secrets-valeurs-absentes.sh",
       "status": "respectee",
       "rc": 0,
-      "output": "5 valeur(s) secrète(s) de 2 fichier(s) absentes de 228 fichiers (iterations/ comprises) et de deploy.log"
+      "output": "5 valeur(s) secrète(s) de 2 fichier(s) absentes de 243 fichiers (iterations/ comprises) et de deploy.log"
     },
     {
       "POLICY": "ENV-devenv-ignore",

@@ -1,0 +1,6 @@
+# responsable-applicatif — 2026-11-17T14:58:04+00:00
+
+## Brief
+Fin d'itération, étape 1 de structure : redéploie DEV sans reset (le reset de dev reste INTERDIT 7 jours ; pas de teardown ; service NE DOIT PAS être touchée). La Team Agile a corrigé le build (./dev build reconstruit désormais les tags :dev et :service, et un correctif nginx Cache-Control: no-cache est prêt). Fais : 1) ./dev build si le deploy ne le fait pas, puis ./dev deploy dev, rc et durée. 2) Contrôle que le front servi sur http://10.77.0.25:8080 contient les correctifs, par EMPREINTES et non par grep de texte brut (le bundle minifié échappe les accents) : md5 du /app.js servi, et recherche de la séquence échappée correspondant à « pour la t\xE2che » ou équivalent ; l'attendu côté Team Agile est un md5 4eb8c08e… pour le bundle servi, dis ce que tu mesures. 3) curl -I sur /, /app.js et /vendor/supabase.js de :8080 : relève Cache-Control. 4) Santé des services, et que service n'a pas bougé (conteneurs, volume, comptages en nombres). 5) Rapporte aussi l'image dev et l'image service utilisées (id et date de création). Aucun secret ni e-mail dans la réponse. Mets à jour iterations/002/mise-en-service.md. En cas d'échec : stoppe et donne l'incident avec les logs.
+
+## Compte rendu

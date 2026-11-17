@@ -12,6 +12,8 @@ RUN npm run build
 # Étape 2 — passerelle : relais /auth/v1 et /rest/v1, CSP, config.js généré au démarrage.
 FROM nginx:1.27.3-alpine
 COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+# Contrôle de syntaxe de la passerelle à la construction (le build échoue si la configuration est invalide).
+RUN nginx -t
 COPY nginx/40-config-js.sh /docker-entrypoint.d/40-config-js.sh
 RUN chmod 0755 /docker-entrypoint.d/40-config-js.sh
 COPY --from=build /build/dist/ /usr/share/nginx/html/

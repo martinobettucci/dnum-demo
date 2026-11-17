@@ -71,7 +71,9 @@ H
     [[ $ok == 1 ]] ;;
   build)
     dc --profile tools --profile client --profile deploy pull --ignore-buildable "$@"
-    dc --profile tools --profile client --profile deploy build "$@" ;;
+    dc --profile tools --profile client --profile deploy build "$@"
+    # Le tag devenv/app:service (surcouche compose.service.yml) n'était jamais reconstruit par ./dev build (pile dev seule).
+    if [[ $PILE == dev && -f stack/compose.service.yml ]]; then DEVENV_PILE=service "$0" build "$@"; fi ;;
   bootstrap)
     "$0" doctor
     chmod +x dev tools/client/client.sh tools/guards/guard.py tools/git-hooks/* tools/deploy/*.sh tools/deploy/*.py
