@@ -15,5 +15,7 @@ Verrou `.devenv/chef-de-projet.lock` (tenu par `structure`), imposé par `tools/
 toute autre session lancée dans `~/devenv` en tant que `chef-de-projet` est bloquée tant que la
 session détentrice est vivante. Lancer une autre session avec un rôle : `claude --agent <role>`.
 
-## Décisions en attente de l'utilisateur
-- Attribution effective des rôles (responsable applicatif pour spark-docker-f1 ?).
+## Attribution des rôles (décision utilisateur, 2026-11-17)
+Chaque équipe dépêche tous les agents de sa compétence (voir CLAUDE.md §4bis) :
+Agile → product-owner, architecte, developpeur · DevOps → testeur, client, sponsor, responsable-applicatif ·
+AOPR → action, policy, observation, reaction. Tout le monde travaille à chaque tour ; le chef de projet orchestre.

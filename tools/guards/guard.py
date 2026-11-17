@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Garde-fou PreToolUse : fait respecter les rôles de CLAUDE.md.
 
-- Seul `responsable-applicatif` met en service / arrête / détruit la pile.
+- Seul `responsable-applicatif` met en service / arrête / détruit la pile, et sauvegarde /
+  restaure ses données (`./dev backup|restore`, ADR-004, SPEC-004.6).
 - `client` : uniquement tools/client/client.sh, et ne lit que ses captures.
 - `observation`, `reaction` : lecture seule.
 Exit 2 = refus (le message sur stderr est renvoyé à l'agent).
@@ -48,7 +49,7 @@ if agent == "chef-de-projet":
 READ_ONLY = {"observation", "reaction"}
 WRITE_TOOLS = {"Write", "Edit", "NotebookEdit", "MultiEdit"}
 STACK_RE = re.compile(
-    r"(\./dev\s+(deploy|teardown|reset)\b"
+    r"(\./dev\s+(deploy|teardown|reset|backup|restore)\b"
     r"|tools/ops/(deploy|teardown|reset)\.sh"
     r"|docker(-compose|\s+compose)\b[^\n]*\b(up|down|start|stop|restart|kill|rm)\b"
     r"|docker\s+(run|start|stop|restart|kill|rm|volume\s+rm|system\s+prune|container\s+(rm|stop|kill)))")
@@ -62,7 +63,7 @@ if tool == "Bash":
         if not re.fullmatch(r"\s*(\./)?tools/client/client\.sh(\s+[^;&|`$<>\n]*)?\s*", cmd):
             deny("le client n'utilise que le clavier et la souris : tools/client/client.sh <action>.")
     elif STACK_RE.search(cmd) and agent != "responsable-applicatif":
-        deny("la mise en service (démarrer/arrêter/détruire la pile) est réservée au "
+        deny("la mise en service (démarrer/arrêter/détruire la pile, sauvegarder/restaurer ses données) est réservée au "
              "responsable-applicatif. Adressez la demande au chef de projet.")
 
 if agent == "client" and tool in {"Read", "Glob", "Grep"} | WRITE_TOOLS:

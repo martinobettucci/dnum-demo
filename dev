@@ -2,26 +2,61 @@
 # Point d'entrée unique de l'environnement de développement reproductible.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"; cd "$ROOT"
-DC=(docker compose -f stack/compose.yml)
 cur() { [[ -f iterations/CURRENT ]] && cat iterations/CURRENT || { echo "aucune itération : ./dev iteration-new" >&2; exit 1; }; }
 now() { date -u +%Y-%m-%dT%H:%M:%S+00:00; }
 
 cmd="${1:-help}"; shift || true
+
+# --- Sélection de la pile (ADR-004, SPEC-004) ---------------------------------------
+# DEVENV_PILE (défaut dev) ou premier argument dev|service des commandes d'exploitation.
+PILE="${DEVENV_PILE:-dev}"
+case "$cmd" in
+  deploy|teardown|reset|status|logs|backup|restore)
+    if [[ ${1:-} == dev || ${1:-} == service ]]; then PILE="$1"; shift; fi ;;
+esac
+FICHIERS=(-f stack/compose.yml)
+case "$PILE" in
+  dev)     PROJET=devenv;       PORT_DEFAUT=8080 ;;
+  service) PROJET=dnum-service; PORT_DEFAUT=8081
+           [[ -f stack/compose.service.yml ]] && FICHIERS+=(-f stack/compose.service.yml) ;;
+  *) echo "pile inconnue : $PILE (dev|service)" >&2; exit 1 ;;
+esac
+SECRETS="$ROOT/.devenv/secrets/$PILE.env"
+export DEVENV_PILE="$PILE" DEVENV_SECRETS="$SECRETS" APP_PORT="${APP_PORT:-$PORT_DEFAUT}"
+
+# docker compose sur la pile choisie ; les secrets (s'ils existent) servent à l'interpolation.
+dc() {
+  local a=(docker compose -p "$PROJET" "${FICHIERS[@]}")
+  [[ -f $SECRETS ]] && a+=(--env-file "$SECRETS")
+  "${a[@]}" "$@"
+}
+a_service() { dc --profile deploy --profile tools --profile client config --services 2>/dev/null | grep -qx "$1"; }
+en_marche() { dc ps --status running --services 2>/dev/null | grep -qx "$1"; }
+dbop() { dc --profile deploy run --rm --no-deps -T migrate "$@"; }   # tools/deploy/db.sh <op>
+seed() {
+  dc --profile deploy run --rm --no-deps -T seed      # tools/deploy/seed.py (GoTrue interne)
+  dbop promote-admin                                  # profil role=admin, is_active=true
+}
+
 case "$cmd" in
   help) cat <<'H'
-./dev bootstrap          vérifie les prérequis et construit toutes les images (idempotent)
+./dev bootstrap          vérifie les prérequis, tire et construit toutes les images (idempotent)
 ./dev doctor             vérifie les prérequis uniquement
-./dev build              construit les images de la pile et de l'outillage
+./dev build              tire les images épinglées et construit celles de la pile et de l'outillage
 ./dev iteration-new      ouvre l'itération suivante (iterations/NNN, iterations/CURRENT)
 ./dev iteration-close    clôt l'itération courante
 ./dev policies           exécute policies/checks → iterations/NNN/policies/results.json
 ./dev test               exécute les tests automatiques → iterations/NNN/tests/
 ./dev cout               rapport de coût de l'itération courante → iterations/NNN/cout.json
-./dev status | logs [s]  état / journaux de la pile
+./dev status | logs [pile] [s]   état / journaux de la pile
+Pile : dev (défaut, jetable, projet devenv, port 8080) | service (projet dnum-service, port 8081).
+       Choix par argument (./dev deploy service) ou DEVENV_PILE=service (test, policies).
 --- réservé au responsable-applicatif ---
-./dev deploy             mise en service (build, démarrage, santé, navigateur du client)
-./dev teardown           arrêt de la pile
-./dev reset              destruction de la pile ET de ses volumes
+./dev deploy [pile]              secrets, démarrage, migrations, seed admin, santé (+ navigateur client en dev)
+./dev teardown [pile]            arrêt de la pile
+./dev reset [pile]               destruction de la pile ET de ses volumes (service : --confirmer-destruction)
+./dev backup [pile]              sauvegarde données auth+public → .devenv/backups/<pile>/<horodatage>.dump
+./dev restore [pile] <fichier>   restauration d'une sauvegarde (même niveau de migration exigé)
 H
   ;;
   doctor)
@@ -30,10 +65,12 @@ H
     docker compose version >/dev/null 2>&1 && echo "✓ docker compose" || { echo "✗ docker compose"; ok=0; }
     docker info >/dev/null 2>&1 && echo "✓ démon docker joignable" || { echo "✗ démon docker injoignable"; ok=0; }
     [[ $ok == 1 ]] ;;
-  build) "${DC[@]}" --profile tools --profile client build "$@" ;;
+  build)
+    dc --profile tools --profile client --profile deploy pull --ignore-buildable "$@"
+    dc --profile tools --profile client --profile deploy build "$@" ;;
   bootstrap)
     "$0" doctor
-    chmod +x dev tools/client/client.sh tools/guards/guard.py
+    chmod +x dev tools/client/client.sh tools/guards/guard.py tools/deploy/*.sh tools/deploy/*.py
     mkdir -p .devenv iterations
     "$0" build
     echo "Environnement prêt. Lancer : cd $ROOT && claude   (le thread principal est le chef de projet)" ;;
@@ -44,25 +81,74 @@ H
     printf '# Itération %s — expression du besoin\n\n(rédigé par le chef de projet)\n' "$n" > "$d/besoin.md"
     echo "itération $n ouverte : $d" ;;
   iteration-close) d="iterations/$(cur)"; now > "$d/.ended"; echo "itération $(cur) close" ;;
-  policies) cur >/dev/null; "${DC[@]}" --profile tools run --rm -T runner run-policies ;;
+  policies) cur >/dev/null; dc --profile tools run --rm -T runner run-policies ;;
   test)
     it=$(cur)
-    "${DC[@]}" --profile tools run --rm -T runner \
+    dc --profile tools run --rm -T runner \
       pytest -q -p no:cacheprovider tests --junitxml="iterations/$it/tests/junit.xml" "$@" \
       | tee "iterations/$it/tests/resultat.txt" ;;
   cout)
     it=$(cur)
     docker run --rm -v "$HOME/.claude/projects:/projects:ro" -v "$ROOT:/w" -w /w python:3.13.1-slim \
       python3 tools/sponsor/cout.py "/projects/${DEVENV_COST_PROJECT:-$(echo "$ROOT" | sed 's#[/.]#-#g')}" "iterations/$it" tools/sponsor/tarifs.json ;;
-  status) "${DC[@]}" --profile client ps ;;
-  logs) "${DC[@]}" --profile client logs --tail=200 "$@" ;;
+  status) dc --profile client ps ;;
+  logs) dc --profile client logs --tail=200 "$@" ;;
   deploy)
-    it=$(cur); t0=$(date +%s)
-    "${DC[@]}" --profile client up -d --build --wait app
-    "${DC[@]}" --profile client up -d client
-    echo "{\"date\":\"$(now)\",\"iteration\":\"$it\",\"commit\":\"$(git rev-parse --short HEAD 2>/dev/null || echo non-commite)\",\"duree_s\":$(( $(date +%s)-t0 ))}" >> .devenv/deploy.log
-    echo "Mise en service OK en $(( $(date +%s)-t0 )) s — http://127.0.0.1:${APP_PORT:-8080}/" ;;
-  teardown) "${DC[@]}" --profile client --profile tools down --remove-orphans ;;
-  reset) "${DC[@]}" --profile client --profile tools down -v --remove-orphans ;;
+    it=$(cur); t0=$(date +%s); mkdir -p .devenv
+    python3 tools/deploy/secrets.py "$SECRETS"                       # SPEC-003.1 (idempotent)
+    [[ $PILE == service && ! -f stack/compose.service.yml ]] && \
+      echo "avertissement : stack/compose.service.yml absent (surcouche service, ADR-004)" >&2
+    if a_service db; then
+      for s in auth rest migrate seed; do
+        a_service "$s" || { echo "deploy : service compose « $s » manquant (SPEC-001.1)" >&2; exit 1; }
+      done
+      dc up -d --build --wait db auth                                # db sain → auth sain
+      dbop migrate                                                   # app/db/migrations (SPEC-001.13)
+      dc up -d --build --wait rest app                               # rest → passerelle saine
+      seed                                                           # SPEC-003.5 (idempotent)
+    else
+      echo "deploy : pas de service db dans la pile — migrations et seed ignorés"
+      dc up -d --build --wait app
+    fi
+    [[ $PILE == dev ]] && dc --profile client up -d client
+    echo "{\"date\":\"$(now)\",\"iteration\":\"$it\",\"pile\":\"$PILE\",\"commit\":\"$(git rev-parse --short HEAD 2>/dev/null || echo non-commite)\",\"duree_s\":$(( $(date +%s)-t0 ))}" >> .devenv/deploy.log
+    echo "Mise en service ($PILE) OK en $(( $(date +%s)-t0 )) s — http://127.0.0.1:${APP_PORT}/" ;;
+  teardown) dc --profile client --profile tools --profile deploy down --remove-orphans ;;
+  reset)
+    if [[ $PILE == service && " $* " != *" --confirmer-destruction "* ]]; then
+      echo "reset service : refusé sans --confirmer-destruction (données persistantes). Rien n'a été détruit." >&2
+      exit 1
+    fi
+    dc --profile client --profile tools --profile deploy down -v --remove-orphans ;;
+  backup)
+    en_marche db || { echo "backup : la pile $PILE n'est pas déployée (db arrêté)" >&2; exit 1; }
+    umask 077; d=".devenv/backups/$PILE"; mkdir -p "$d"; chmod 700 .devenv/backups "$d"
+    ts=$(date -u +%Y%m%d-%H%M%S); f="$d/$ts.dump"
+    dbop dump > "$f.part" || { rm -f "$f.part"; echo "backup : échec du pg_dump" >&2; exit 1; }
+    mv "$f.part" "$f"
+    niveau=$(dbop level)
+    DATE="$(now)" PILE_="$PILE" NIVEAU="$niveau" COMMIT="$(git rev-parse --short HEAD 2>/dev/null || echo non-commite)" \
+    IMAGES="$(dc --profile deploy config --images 2>/dev/null | sort -u)" python3 - "$d/$ts.json" <<'PY'
+import json, os, sys
+json.dump({"date": os.environ["DATE"], "pile": os.environ["PILE_"], "commit": os.environ["COMMIT"],
+           "migration": os.environ["NIVEAU"], "images": os.environ["IMAGES"].split(),
+           "contenu": "pg_dump -Fc --data-only --schema=auth --schema=public"},
+          open(sys.argv[1], "w"), indent=2, ensure_ascii=False)
+PY
+    echo "sauvegarde : $f (+ $ts.json, migration ${niveau:-aucune})" ;;
+  restore)
+    f="${1:-}"; [[ -n $f && -f $f ]] || { echo "usage : ./dev restore [dev|service] <fichier.dump>" >&2; exit 1; }
+    meta="${f%.dump}.json"; [[ -f $meta ]] || { echo "restore : métadonnées $meta absentes" >&2; exit 1; }
+    en_marche db || { echo "restore : la pile $PILE n'est pas déployée (db arrêté)" >&2; exit 1; }
+    attendu=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["migration"])' "$meta")
+    niveau=$(dbop level)
+    [[ $attendu == "$niveau" ]] || {
+      echo "restore : refus — sauvegarde au niveau de migration « $attendu », pile $PILE au niveau « $niveau »" >&2; exit 1; }
+    dc stop auth rest
+    rc=0; dbop restore < "$f" || rc=$?
+    dc up -d --wait auth rest
+    [[ $rc == 0 ]] || { echo "restore : échec de la restauration (transaction annulée)" >&2; exit 1; }
+    seed                                                             # admin : ADMIN_PASSWORD du fichier
+    echo "restauration ($PILE) OK depuis $f" ;;
   *) echo "commande inconnue : $cmd" >&2; "$0" help; exit 1 ;;
 esac

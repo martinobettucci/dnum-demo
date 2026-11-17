@@ -1,0 +1,21 @@
+# SPEC-001 — Pile Supabase auto-hébergée et passerelle unique
+
+Itération 002. Décisions : ADR-001, ADR-002. Couvre CA-002-1, CA-002-2, CA-002-3.
+Vérification : [T] test automatique (`tests/`, depuis le runner, `APP_URL=http://app`),
+[P] policy (`policies/checks/`), [R] recette du responsable applicatif (`mise-en-service.md`).
+
+| Id | Exigence (énoncé vérifiable) | CA | Vérification |
+|---|---|---|---|
+| SPEC-001.1 | `stack/compose.yml` définit exactement les services `db`, `auth`, `rest`, `app` (+ one-shot `migrate`, `seed`, et les outils `runner`, `client` sous profils). Aucun service Studio, Kong, Realtime, Storage, Meta, SMTP. | CA-002-1 | [P] analyse de `stack/compose.yml` |
+| SPEC-001.2 | Images : `supabase/postgres:15.8.1.060`, `supabase/gotrue:v2.170.0`, `postgrest/postgrest:v12.2.8`, `nginx:1.27.3-alpine`, `node:22.12.0-alpine` (build), `python:3.13.1-slim` (seed). Toute référence `image:` de compose et tout `FROM` ont un tag exact ; aucun `latest`, aucune image sans tag. | CA-002-2 | [P] `ENV-images-epinglees` étendue aux clés `image:` de `stack/*.yml` |
+| SPEC-001.3 | Seul le service `app` publie un port : `127.0.0.1:${APP_PORT}:80` et `${APP_LAN_IP:-10.77.0.25}:${APP_PORT}:80`. Aucun port publié sur `0.0.0.0`, aucun port publié pour `db`, `auth`, `rest`. | CA-002-1, CA-002-3 | [P] analyse compose ; [R] `ss -ltn` sur l'hôte |
+| SPEC-001.4 | Après `./dev reset` puis `./dev deploy`, `GET /` répond `200` (HTML) sur `http://127.0.0.1:${APP_PORT}/` et `http://10.77.0.25:${APP_PORT}/`. | CA-002-1 | [T] `GET $APP_URL/` = 200 ; [R] `curl` des deux adresses consigné dans `mise-en-service.md` |
+| SPEC-001.5 | `./dev deploy` ne rend la main (code 0) que lorsque `db`, `auth`, `rest`, `app` sont sains, les migrations appliquées et le seed admin réussi ; sinon code ≠ 0. | CA-002-1 | [R] ; [T] `GET $APP_URL/auth/v1/health` = 200 et `GET $APP_URL/rest/v1/` ≠ 5xx |
+| SPEC-001.6 | La passerelle relaie `/auth/v1/*` → `auth:9999/*` et `/rest/v1/*` → `rest:3000/*` (préfixe retiré, en-têtes `Authorization` et `apikey` transmis). | CA-002-3 | [T] `POST $APP_URL/auth/v1/token?grant_type=password` (admin) = 200 avec `access_token` ; `GET $APP_URL/rest/v1/team_load` avec ce jeton = 200 |
+| SPEC-001.7 | La passerelle répond `403` à toute requête `$APP_URL/auth/v1/admin/*`. | CA-002-3 | [T] |
+| SPEC-001.8 | Le front ne contient aucune URL absolue vers un autre hôte ou port : les fichiers servis (`/`, `/app.js`, `/config.js`, `/style.css`) ne contiennent ni `:9999`, ni `:3000`, ni `:5432`, ni `http://auth`, `http://rest`, `localhost` ; l'URL Supabase est `window.location.origin`. | CA-002-3 | [T] téléchargement et recherche dans les fichiers servis |
+| SPEC-001.9 | Les réponses HTML de `/` portent l'en-tête `Content-Security-Policy` contenant `connect-src 'self'` et `default-src 'self'`. | CA-002-3 | [T] |
+| SPEC-001.10 | `/config.js` expose la clé `anon` courante (égale à `ANON_KEY` de `.devenv/secrets/<pile>.env`) et aucune autre clé ; la clé `service_role` n'apparaît dans aucun fichier servi. | CA-002-2, CA-002-3 | [T] comparaison avec le fichier de secrets lu depuis `/workspace/.devenv/secrets/dev.env` |
+| SPEC-001.11 | Configuration GoTrue : inscription ouverte, confirmation e-mail automatique (`GOTRUE_MAILER_AUTOCONFIRM=true`), longueur minimale du mot de passe 8 (`GOTRUE_PASSWORD_MIN_LENGTH=8`), aucun SMTP, `API_EXTERNAL_URL` et `SITE_URL` dérivés de l'URL publique (`APP_PUBLIC_URL`, défaut `http://127.0.0.1:${APP_PORT}`). Limites de débit d'inscription relevées pour permettre les tests (≥ 100/h). | CA-002-6, CA-002-7 | [T] inscription → session immédiate ; mot de passe de 7 car. → 422 |
+| SPEC-001.12 | Configuration PostgREST : schéma exposé `public` uniquement, rôle anonyme `anon`, secret JWT = `JWT_SECRET`, `PGRST_DB_MAX_ROWS=1000`. Le schéma `private` n'est pas exposé. | CA-002-11 | [T] `GET $APP_URL/rest/v1/rpc/...` d'une fonction de `private` → 404 |
+| SPEC-001.13 | Le schéma applicatif est créé par des migrations versionnées `app/db/migrations/NNN_<sujet>.sql`, appliquées dans l'ordre à chaque `./dev deploy`, idempotentes (journal `private.schema_migrations`, schéma non exposé), suivies de `NOTIFY pgrst, 'reload schema'`. | CA-002-1, CA-002-33 | [R] deux `./dev deploy` successifs sans erreur ; [T] présence des tables via l'API |

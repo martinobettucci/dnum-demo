@@ -1,0 +1,192 @@
+{
+  "iteration": "002",
+  "date": "2026-11-17T11:56:39",
+  "pile_demarree": true,
+  "results": [
+    {
+      "POLICY": "ENV-images-epinglees",
+      "REF": "ENV | SPEC-001.2 | CA-002-2",
+      "QUAND": "always",
+      "file": "00-env-images-epinglees.sh",
+      "status": "respectee",
+      "rc": 0,
+      "output": "7 références d'image (FROM + image:) vérifiées, toutes épinglées par tag exact"
+    },
+    {
+      "POLICY": "ENV-dependances-epinglees",
+      "REF": "ENV (reproductibilité)",
+      "QUAND": "always",
+      "file": "01-env-dependances-epinglees.sh",
+      "status": "respectee",
+      "rc": 0,
+      "output": "dépendances Python épinglées (==)"
+    },
+    {
+      "POLICY": "ENV-pas-de-secret",
+      "REF": "ENV | SPEC-003.3 | CA-002-2",
+      "QUAND": "always",
+      "file": "02-env-pas-de-secret.sh",
+      "status": "respectee",
+      "rc": 0,
+      "output": "aucun motif de secret (dont JWT) dans le dépôt hors .git/.devenv/iterations/node_modules"
+    },
+    {
+      "POLICY": "ENV-toolbox-epinglee",
+      "REF": "ENV (reproductibilité — commandes absentes conteneurisées)",
+      "QUAND": "always",
+      "file": "03-env-toolbox-epinglee.sh",
+      "status": "respectee",
+      "rc": 0,
+      "output": "toutes les images de la toolbox sont épinglées"
+    },
+    {
+      "POLICY": "ENV-npm-epinglees",
+      "REF": "ENV | ADR-002 | SPEC-006 §3.2 | CA-002-2",
+      "QUAND": "always",
+      "file": "04-env-npm-epinglees.sh",
+      "status": "violee",
+      "rc": 1,
+      "output": "app/web/package.json absent"
+    },
+    {
+      "POLICY": "ENV-secrets-valeurs-absentes",
+      "REF": "SPEC-003.3 | SPEC-003.6 | SPEC-003.7 | SPEC-006 §1 | CA-002-2",
+      "QUAND": "always",
+      "file": "05-env-secrets-valeurs-absentes.sh",
+      "status": "non_applicable",
+      "rc": 77,
+      "output": "aucun fichier .devenv/secrets/*.env : rien à comparer"
+    },
+    {
+      "POLICY": "ENV-devenv-ignore",
+      "REF": "SPEC-003.3 | ADR-003 | CA-002-2",
+      "QUAND": "always",
+      "file": "06-env-devenv-ignore.sh",
+      "status": "respectee",
+      "rc": 0,
+      "output": ".gitignore ignore .devenv/"
+    },
+    {
+      "POLICY": "APP-repond",
+      "REF": "ENV (mise en service)",
+      "QUAND": "deployed",
+      "file": "10-app-repond.sh",
+      "status": "respectee",
+      "rc": 0,
+      "output": "GET / → 200"
+    },
+    {
+      "POLICY": "GW-relais-auth",
+      "REF": "SPEC-001.5 | SPEC-001.6 | CA-002-3",
+      "QUAND": "deployed",
+      "file": "11-gw-relais-auth.sh",
+      "status": "violee",
+      "rc": 1,
+      "output": "GET /auth/v1/health → 404 text/html : non relayé à GoTrue"
+    },
+    {
+      "POLICY": "GW-relais-rest",
+      "REF": "SPEC-001.5 | SPEC-001.6 | CA-002-3",
+      "QUAND": "deployed",
+      "file": "12-gw-relais-rest.sh",
+      "status": "violee",
+      "rc": 1,
+      "output": "GET /rest/v1/ → 404 text/html : non relayé à PostgREST"
+    },
+    {
+      "POLICY": "GW-admin-bloque",
+      "REF": "SPEC-001.7 | SPEC-003.6 | ADR-001 | CA-002-3",
+      "QUAND": "deployed",
+      "file": "13-gw-admin-bloque.sh",
+      "status": "violee",
+      "rc": 1,
+      "output": "API admin GoTrue exposée ou mal bloquée (SANS clé service_role (fichier de secrets absent)) : GET /auth/v1/admin/users→404 POST /auth/v1/admin/users→404 GET /auth/v1/admin→404"
+    },
+    {
+      "POLICY": "GW-csp",
+      "REF": "SPEC-001.9 | ADR-002 | CA-002-3",
+      "QUAND": "deployed",
+      "file": "14-gw-csp.sh",
+      "status": "violee",
+      "rc": 1,
+      "output": "GET / → 200 sans en-tête Content-Security-Policy"
+    },
+    {
+      "POLICY": "FRONT-meme-origine",
+      "REF": "SPEC-001.8 | SPEC-001.10 | ADR-002 | CA-002-2 | CA-002-3",
+      "QUAND": "deployed",
+      "file": "15-front-meme-origine.sh",
+      "status": "violee",
+      "rc": 1,
+      "output": "front non conforme : /app.js → 404 ; /config.js → 404 ; /style.css → 404"
+    },
+    {
+      "POLICY": "API-anon-refuse",
+      "REF": "SPEC-002.1 | SPEC-002.2 | SPEC-001.12 | CA-002-11",
+      "QUAND": "deployed",
+      "file": "16-api-anon-refuse.sh",
+      "status": "violee",
+      "rc": 1,
+      "output": "ANON_KEY absente de .devenv/secrets/dev.env : vérification impossible"
+    },
+    {
+      "POLICY": "ENV-secrets-fichier",
+      "REF": "SPEC-003.1 | SPEC-003.2 | ADR-003 | CA-002-4",
+      "QUAND": "deployed",
+      "file": "17-env-secrets-fichier.sh",
+      "status": "violee",
+      "rc": 1,
+      "output": ".devenv/secrets/dev.env absent alors que la pile est déployée"
+    },
+    {
+      "POLICY": "STACK-services",
+      "REF": "SPEC-001.1 | SPEC-001.2 | ADR-001 | CA-002-1",
+      "QUAND": "always",
+      "file": "20-stack-services.sh",
+      "status": "violee",
+      "rc": 1,
+      "output": "compose non conforme : services manquants : auth, db, rest"
+    },
+    {
+      "POLICY": "STACK-ports",
+      "REF": "SPEC-001.3 | ADR-001 | CA-002-1 | CA-002-3",
+      "QUAND": "always",
+      "file": "21-stack-ports.sh",
+      "status": "violee",
+      "rc": 1,
+      "output": "ports non conformes : compose.yml : app non publié sur ${APP_LAN_IP:-10.77.0.25}"
+    },
+    {
+      "POLICY": "DB-migrations-versionnees",
+      "REF": "SPEC-001.13 | SPEC-002 | CA-002-1 | CA-002-33",
+      "QUAND": "always",
+      "file": "22-db-migrations-versionnees.sh",
+      "status": "violee",
+      "rc": 1,
+      "output": "app/db/migrations/ absent"
+    },
+    {
+      "POLICY": "DB-rls-privileges-statique",
+      "REF": "SPEC-002.1 | SPEC-002 §5-6 | ADR-005 | CA-002-11",
+      "QUAND": "always",
+      "file": "23-db-rls-privileges-statique.sh",
+      "status": "violee",
+      "rc": 1,
+      "output": "aucune migration app/db/migrations/*.sql à analyser"
+    },
+    {
+      "POLICY": "GARDE-FOU-mise-en-service",
+      "REF": "SPEC-004.6 | ADR-004 | CLAUDE.md §5",
+      "QUAND": "always",
+      "file": "24-garde-fou-mise-en-service.sh",
+      "status": "respectee",
+      "rc": 0,
+      "output": "garde-fou conforme sur 70 cas simulés (deploy/teardown/reset/backup/restore réservés au responsable-applicatif)"
+    }
+  ],
+  "synthese": {
+    "respectee": 7,
+    "violee": 12,
+    "non_applicable": 1
+  }
+}

@@ -76,6 +76,23 @@ leurs restitutions dans `iterations/NNN/observation.md` et `reaction.md`.
 9. `sponsor` → `cout.md`.
 10. `chef-de-projet` → restitution à l'utilisateur ; `./dev iteration-close`.
 
+## 4bis. Équipes = sessions, dépêche des agents (décision utilisateur 2026-11-17)
+
+Chaque équipe est une session Claude locale qui **dépêche elle-même les agents de sa compétence**
+(`tools/ops/role.sh <agent> "<brief>"`, lancé depuis `~/devenv` : garde-fous et mesure de coût actifs) :
+
+| Session | Équipe | Agents dépêchés |
+|---|---|---|
+| structure | Chef de projet | — (orchestre : décide quand dépêcher quelle équipe) |
+| spark-docker-77 | Team Agile | product-owner, architecte, developpeur |
+| spark-docker-f1 | Team DevOps | testeur, client, sponsor, responsable-applicatif |
+| spark-docker-70 | Team AOPR | action, policy, observation, reaction |
+
+- **Tout le monde travaille à chaque tour** : chaque tour, le chef de projet envoie à chaque équipe sa
+  mission du tour ; chaque équipe dépêche ses agents puis **rapporte aux autres sessions** (les 3 autres)
+  selon son périmètre : fichiers produits, faits, blocages.
+- Le chef de projet ne dépêche plus lui-même les agents de rôle ; il orchestre, consigne et restitue.
+
 ## 5. Règles transverses
 
 - Personne d'autre que le `responsable-applicatif` ne lance, n'arrête ou ne
