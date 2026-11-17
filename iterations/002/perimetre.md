@@ -348,3 +348,41 @@ Critères provisoires (numérotation définitive à la charge du product owner d
 Dépendances : la mise à jour `supabase-js` de BL-003-1 peut modifier l'appel ; la recette d'authentification de 003 rejoue CA-002-4 à 002-12 et CA-003-a à 003-d.
 
 Hors périmètre de cette story (à confirmer) : « mot de passe oublié » par e-mail (SMTP exclu de 002 et 003 sauf décision contraire) ; changement du mot de passe d'un autre compte par l'administrateur ; règle de complexité au-delà de 8 caractères ; historique des mots de passe ; double authentification.
+
+## 8. Backlog de l'itération 003 — retours de la recette passe 3 (décision du chef de projet, 2026-11-17)
+
+Inscrit au backlog de 003, **non réalisé dans 002**. Constat : CA-002-27, CA-002-28 et CA-002-37 sont validés à la recette passe 3 (CA-002-37 sur la barre fixe), CA-002-38 et CA-002-39 également. Les trois points ci-dessous sont des améliorations de ces critères validés, pas des rejets. Ils sont rédigés en langage utilisateur ; la numérotation `CA-003-x` définitive sera fixée par le product owner de 003.
+
+**Priorités proposées** (à confirmer par le chef de projet à l'ouverture de 003) : US-19 SHOULD, US-20 MUST, US-21 SHOULD.
+
+### US-19 — Message de confirmation visible près de l'action (SHOULD)
+
+En tant que membre activé, je veux voir le message de confirmation de ma proposition ou de ma demande d'aide là où j'ai cliqué, afin de ne pas le manquer quand la page est longue.
+
+Constat : le message est aujourd'hui affiché en haut de page, hors de la vue quand l'utilisateur a fait défiler la page vers l'action.
+
+- **CA-003-i** [C] — Après « Proposer mon aide » (CA-002-27) ou « Demander de l'aide » (CA-002-28), le message de confirmation (textes M-1 et M-2 de SPEC-005, inchangés) apparaît à côté du bouton déclenché, **ou** la page défile jusqu'à lui : dans les deux cas il est visible sans défilement manuel. Le message est annoncé aux lecteurs d'écran (zone à annonce vocale polie, `aria-live`), sans rechargement de la page.
+
+### US-20 — Cadre de focus visible sur les boutons (MUST)
+
+En tant que membre qui navigue au clavier, je veux voir quel bouton a le focus, afin de savoir où je me trouve et quelle action je vais déclencher.
+
+Motif : la recette est exclusivement clavier et souris ; sans cadre visible, la navigation au Tab n'est pas vérifiable à l'œil. Cette story est un prérequis de la recette clavier de 003.
+
+- **CA-003-j** [C] — Chaque bouton de l'application (dont « Activer », « Désactiver », « Confirmer la désactivation », « Annuler » de CA-002-39, « Proposer mon aide », « Demander de l'aide », « Accepter », « Refuser », « Mon mot de passe ») affiche un cadre de focus visible lorsqu'il reçoit le focus par la touche Tab. Le cadre est nettement distinct du fond à l'écran. Au clic souris, le cadre peut ne pas apparaître ; ce n'est pas exigé.
+  Vérification : le client, au seul clavier, parcourt la page et capture chaque bouton ayant le focus ; aucune capture n'est sans cadre.
+
+### US-21 — Vérification du zoom 200 % par un moyen fiable (SHOULD)
+
+En tant que responsable de la recette, je veux une vérification du zoom 200 % qui produise un effet observable, afin que CA-002-37 ne repose pas sur un test qui ne voit rien.
+
+Constat : le client headless n'a produit aucun effet visible en zoom 200 % ; la vérification de CA-002-37 ne peut donc pas être considérée comme probante à ce niveau de zoom. Le moyen de vérification (navigateur réel, outil de test automatisé avec largeur équivalente à 200 %, ou autre) est choisi par l'architecte, pas par ce document.
+
+- **CA-003-k** [C] ou [T] selon le moyen retenu — Au zoom 200 % (équivalent 320 px de largeur de contenu), la page reste utilisable : la barre du haut reste visible après défilement, un lien de la barre fonctionne pendant le défilement (CA-002-37), et il n'y a pas de défilement horizontal pour lire le texte courant. La preuve consiste en une capture à 100 % et une capture à 200 % **différentes**, le niveau de zoom étant indiqué ; une capture identique à 100 % fait échouer le critère.
+
+### Hors périmètre de ce backlog (003)
+
+- Refonte graphique de l'interface, nouvelle charte de couleurs (hors US-20 : seul le cadre de focus est visé).
+- Échap pour fermer le bloc de confirmation (recommandé par SPEC-005.63, non exigé par CA-002-39) : à traiter avec US-20 si le chef de projet le souhaite, sinon hors périmètre.
+- Annonce vocale de tous les messages de l'application : seul le message de confirmation de US-19 est visé.
+- Tests du zoom 400 % ou 300 % : seul le niveau 200 % est exigé.
