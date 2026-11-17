@@ -5,6 +5,7 @@
 claude               # depuis ce dossier : le thread principal est le chef de projet
 ```
 
+- `METHODE.md` — genèse : toutes les consignes et échanges qui ont construit cette usine.
 - `CLAUDE.md` — méthode de travail (boucle AOPR, équipe agile, DevOps).
 - `.claude/agents/` — les 12 agents : chef-de-projet, product-owner, architecte, developpeur,
   action, policy, observation, reaction, testeur, client, sponsor, responsable-applicatif.
