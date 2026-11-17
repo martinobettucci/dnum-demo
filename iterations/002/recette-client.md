@@ -2,6 +2,8 @@
 
 - Destinataire : Team DevOps, agent `client` (recette au clavier et à la souris uniquement, `tools/client/client.sh`).
 - Rédigé par : product owner, 2026-11-17, à partir de `perimetre.md` (critères marqués [C]).
+- Tour 3 (préparation, **non exécutée** : gel de la pile `dev`) : étapes 5 et 16 (messages de confirmation, CA-002-27/28),
+  étape 17 bis (nouvelle : barre fixe CA-002-37, recherche administrateur CA-002-38), étape 18.1 (confirmation, CA-002-34).
 - Ne couvre **que** les critères [C]. Les critères [T] et [R] ne sont pas recettés ici.
 
 ## 0. Consignes
@@ -38,7 +40,8 @@
 | CA-002-15 | 10 | CA-002-29 | 16 |
 | CA-002-17 | 14 | CA-002-30 | 16 |
 | CA-002-18 | 11 | CA-002-32 | 16 |
-| CA-002-34 (Could) | 18.1 | CA-002-35 (Could) | 18.2 |
+| CA-002-34 (Could) | 18.1 (confirmation incluse) | CA-002-35 (Could) | 18.2 |
+| CA-002-37 | 17 bis A | CA-002-38 | 17 bis B |
 
 ## 2. Pas à pas
 
@@ -184,7 +187,7 @@ Préalable — compte 2 crée deux tâches :
 Proposition P1 — « Proposer mon aide » (CA-002-27, CA-002-29) :
 3. Connectez-vous avec **compte 1**. Sur le tableau de bord, cliquez « Recette Deux », puis sur **« Tâche E »** (non terminée, affectée à compte 2).
 4. Cliquez « Proposer mon aide », confirmez.
-5. **Attendu** : message de confirmation. **[capture]**. Déconnectez-vous.
+5. **Attendu** : un message apparaît à l'écran et nomme le collègue et la tâche : « Proposition d'aide envoyée à Recette Deux pour « Tâche E » ». Le texte « Proposition envoyée » seul est un **KO** (CA-002-27). **[capture]**. Déconnectez-vous.
 6. Connectez-vous avec **compte 2**. Ouvrez « Propositions reçues ».
 7. **Attendu** : une proposition de « Recette Un » sur « Tâche E » est visible, avec le nom du proposant et la tâche.
 8. Cliquez « Accepter ».
@@ -193,7 +196,7 @@ Proposition P1 — « Proposer mon aide » (CA-002-27, CA-002-29) :
 
 Proposition P2 — « Demander de l'aide » (CA-002-28, CA-002-32, CA-002-30) :
 11. Toujours avec **compte 2**, sur « Tâche F » (non terminée), cliquez « Demander de l'aide », choisissez « Recette Un », validez.
-12. **Attendu** : message de confirmation. Déconnectez-vous.
+12. **Attendu** : un message apparaît à l'écran, sans autre clic : « Demande d'aide envoyée à Recette Un pour « Tâche F » » (CA-002-28). Le texte « Proposition envoyée » seul est un **KO**. **[capture]**. Déconnectez-vous.
 13. Connectez-vous avec **compte 1**. Sur le tableau de bord, **Attendu** : le compteur de propositions reçues en attente affiche **1**. **[capture]**.
 14. Ouvrez « Propositions reçues ». **Attendu** : la proposition de « Recette Deux » sur « Tâche F » est visible.
 15. Cliquez « Refuser ».
@@ -211,17 +214,36 @@ Vérification finale de P2 :
 2. **Attendu** : **7 h** (5 + E 2). Aucun indicateur « Surchargé » : le seuil est **strictement supérieur à 7 h**.
 3. **[capture]**. Déconnectez-vous.
 
+### Étape 17 bis — Barre du haut fixe et recherche administrateur (CA-002-37, CA-002-38)
+
+**A. Barre fixe (CA-002-37)** — compte 1, membre activé.
+1. Connectez-vous avec compte 1. Sur « Mes tâches », appuyez sur Ctrl + « + » jusqu'à 200 % (puis 300 % si la page ne défile pas). **Ne créez aucune tâche.**
+2. **Attendu** : la page est plus longue que l'écran et défile.
+3. Faites défiler la page vers le bas à la molette. **Attendu** : la barre du haut (nom de l'application, liens de navigation, déconnexion) reste visible en haut de l'écran. **[capture]** avant défilement puis **[capture]** après défilement.
+4. Pendant que la page est défilée, Tab jusqu'à un lien de la barre (par exemple « Tableau de bord »), puis Entrée. **Attendu** : le lien fonctionne et la barre reste visible. **[capture]**.
+5. Ctrl + 0 (zoom 100 %). Déconnectez-vous.
+
+**B. Recherche administrateur (CA-002-38)** — état attendu : compte 1 et compte 2 activés ; compte 3 (« Recette Trois ») en attente ; recette-4 absent.
+6. Connectez-vous en administrateur. Ouvrez « Administration ». **Attendu** : un champ « Rechercher » est présent au-dessus de « Comptes en attente » et de « Comptes actifs ». Tab jusqu'à ce champ : il reçoit le focus (visible).
+7. Saisissez « recette trois », sans Entrée (ou avec). **Attendu** : « Comptes en attente » ne montre que « Recette Trois » ; « Comptes actifs » affiche « Aucun compte ne correspond à la recherche ». **[capture]**.
+8. Effacez le champ. **Attendu** : les listes reviennent complètes (au minimum « Recette Un » et « Recette Deux » dans « Comptes actifs », « Recette Trois » dans « Comptes en attente »). **[capture]**.
+9. Saisissez « RECETTE-1 » en majuscules, puis Entrée. **Attendu** : « Comptes actifs » ne montre que « Recette Un » (la casse est ignorée) ; « Comptes en attente » affiche « Aucun compte ne correspond à la recherche ». **[capture]**.
+10. Saisissez « zzzz ». **Attendu** : les deux listes affichent « Aucun compte ne correspond à la recherche ». **[capture]**.
+11. Effacez le champ. **Attendu** : listes complètes. Déconnectez-vous.
+
 ### Étape 18 — Fonctions Could (conditionnelles)
 À exécuter **seulement si** les stories US-15 et US-16 sont livrées dans cette itération. Sinon, notez « non applicable ».
 
 **18.1 — Désactivation (CA-002-34)**
 1. Connectez-vous en administrateur. Ouvrez « Administration », « Comptes actifs ».
-2. Cliquez « Désactiver » sur **compte 2**, confirmez.
-3. Déconnectez-vous. Connectez-vous avec compte 2.
-4. **Attendu** : seul l'écran « Compte en attente d'activation » est affiché.
-5. **[capture]**. Déconnectez-vous.
-6. Connectez-vous en administrateur. Sur la ligne de l'administrateur lui-même, tentez « Désactiver ».
-7. **Attendu** : l'action est impossible (bouton absent ou refus avec message). **[capture]**.
+2. Cliquez « Désactiver » sur **compte 2**. **Attendu** : une fenêtre demande « Désactiver ce compte ? » avec les boutons « Confirmer » et « Annuler ». **[capture]**.
+3. Appuyez sur Échap (ou choisissez « Annuler »). **Attendu** : la fenêtre se ferme ; compte 2 figure toujours dans « Comptes actifs », sans changement.
+4. Recommencez : « Désactiver » sur **compte 2**, puis « Confirmer ». **Attendu** : compte 2 n'apparaît plus comme compte actif.
+5. Déconnectez-vous. Connectez-vous avec compte 2.
+6. **Attendu** : seul l'écran « Compte en attente d'activation » est affiché.
+7. **[capture]**. Déconnectez-vous.
+8. Connectez-vous en administrateur. Sur la ligne de l'administrateur lui-même, cherchez le bouton « Désactiver ».
+9. **Attendu** : aucun bouton « Désactiver » sur votre propre ligne. **[capture]**.
 
 **18.2 — Tâches du jour (CA-002-35)**
 1. Connectez-vous avec **compte 1**. Créez « Tâche G » avec une échéance **aujourd'hui**, « Tâche H » avec une échéance **hier**, « Tâche I » sans échéance (estimation 1 pour chacune).
@@ -250,6 +272,7 @@ Vérification finale de P2 :
 
 ## 4. Couverture
 
-Les 25 critères [C] de l'itération 002 sont tous couverts par la table du §1 :
-CA-002-5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 17, 18, 19, 21, 22, 23, 24, 25, 27, 28, 29, 30, 32, 34 (Could), 35 (Could).
+Les 27 critères [C] de l'itération 002 sont tous couverts par la table du §1 :
+CA-002-5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 17, 18, 19, 21, 22, 23, 24, 25, 27, 28, 29, 30, 32, 34 (Could), 35 (Could),
+37, 38 (ajoutés au tour 3).
 Hors recette ici, par construction : CA-002-1, 33, 36 ([R] et [T]) ; CA-002-2, 3, 4, 11, 16, 20, 26, 31 ([T] ou [P]).

@@ -227,10 +227,16 @@ que l'hôte seul peut faire : elles ne sont pas des critères fonctionnels et ne
   tâche, est refusée.
 
 ### US-11 / US-12 / US-13 — Propositions d'entraide (Should)
-- **CA-002-27** [C] — Sur une tâche non terminée d'un collègue, un bouton « Proposer mon aide » crée une proposition ;
-  le collègue la voit dans « Propositions reçues » avec le nom du proposant et la tâche.
-- **CA-002-28** [C] — Sur l'une de ses tâches non terminées, un bouton « Demander de l'aide » permet de choisir un
-  collègue activé ; celui-ci voit la proposition dans « Propositions reçues ».
+- **CA-002-27** [C] — *(réécrit au tour 3 : message de confirmation)* Sur une tâche non terminée d'un collègue, le bouton
+  « Proposer mon aide » crée une proposition. Après le clic, un message apparaît à l'écran, sans recharger la page, et
+  nomme le collègue et la tâche : « Proposition d'aide envoyée à <nom du collègue> pour « <titre de la tâche> ». »
+  Le seul texte « Proposition envoyée », sans nom de tâche, ne satisfait pas ce critère. Le collègue voit la proposition
+  dans « Propositions reçues » avec le nom du proposant et la tâche.
+- **CA-002-28** [C] — *(réécrit au tour 3 : message de confirmation)* Sur l'une de ses tâches non terminées, le bouton
+  « Demander de l'aide » ouvre le choix d'un collègue activé. Après validation, un message apparaît à l'écran, sans
+  recharger la page, et nomme le collègue et la tâche : « Demande d'aide envoyée à <nom du collègue> pour
+  « <titre de la tâche> ». » Ce message reste visible sans clic supplémentaire, jusqu'à ce que la page change. Le
+  collègue voit la demande dans « Propositions reçues ».
 - **CA-002-29** [C] — Le destinataire clique « Accepter » : la tâche est affectée à celui qui la prend (le proposant
   pour « Proposer mon aide », le destinataire pour « Demander de l'aide »), la proposition passe à « acceptée » côté
   émetteur, et les charges du tableau de bord sont mises à jour.
@@ -245,8 +251,11 @@ que l'hôte seul peut faire : elles ne sont pas des critères fonctionnels et ne
   `./dev deploy` effectué sans `./dev reset` ; le mot de passe admin n'est pas régénéré (SPEC-004.3, SPEC-003.5).
 
 ### US-15 — Désactivation (Could)
-- **CA-002-34** [C] — L'admin clique « Désactiver » sur un compte actif ; ce compte, reconnecté, ne voit plus que
-  l'écran « Compte en attente d'activation » ; l'admin ne peut pas se désactiver lui-même.
+- **CA-002-34** [C] — *(complété au tour 3 : confirmation)* Dans « Administration », « Comptes actifs », l'admin clique
+  « Désactiver » sur un compte : une fenêtre demande « Désactiver ce compte ? » avec les boutons « Confirmer » et
+  « Annuler ». « Annuler » (ou Échap) ferme la fenêtre ; le compte reste actif, la liste ne change pas. « Confirmer »
+  désactive le compte : il n'apparaît plus comme compte actif, et ce compte, reconnecté, ne voit plus que l'écran
+  « Compte en attente d'activation ». Sur la ligne de son propre compte, l'admin ne voit pas de bouton « Désactiver ».
 
 ### US-16 — Tâches du jour (Could)
 - **CA-002-35** [C] — Une tâche peut recevoir une échéance facultative ; un filtre « Aujourd'hui » du tableau de bord ne
@@ -259,6 +268,25 @@ que l'hôte seul peut faire : elles ne sont pas des critères fonctionnels et ne
   (`./dev backup service`) puis une restauration après reset sur une pile au même niveau de migration restituent
   comptes, tâches, temps et propositions ([T]). `./dev reset service` sans `--confirmer-destruction` est refusé sans rien
   détruire ([R]). Une restauration vers un niveau de migration différent est refusée ([T]).
+
+### Retours de recette, tour 3 (rattachés aux stories existantes)
+
+Modifications du tour 3 : CA-002-27, CA-002-28 et CA-002-34 réécrits (messages et confirmation) ; CA-002-37 et
+CA-002-38 créés. Statut : **non recettés**. Le gel de la pile `dev` est actif : aucun `deploy`, `reset` ou `test`
+n'est lancé pour vérifier ces critères avant levée du gel. Priorité proposée : CA-002-38 dans la boucle (US-4, Must) ;
+CA-002-37 (Should) livré si le reste est vert.
+
+- **CA-002-37** [C] — *(créé au tour 3, rattaché à US-9 : interface commune)* Sur toute page connectée (tableau de bord,
+  « Mes tâches », « Administration », tâches d'un collègue), la barre du haut (nom de l'application, liens de navigation,
+  déconnexion) reste affichée en haut de l'écran quand la page défile. Vérification : sur une page plus longue que
+  l'écran (zoom du navigateur à 200 % ou 300 % avec Ctrl + « + »), la barre reste visible après défilement à la molette
+  ; un lien de la barre, activé pendant le défilement, fonctionne toujours.
+- **CA-002-38** [C] — *(créé au tour 3, rattaché à US-4 : listes d'administration)* Dans « Administration », un champ
+  « Rechercher » est placé au-dessus des listes « Comptes en attente » et « Comptes actifs ». Taper un nom ou une partie
+  d'e-mail, sans distinction de majuscules, filtre les deux listes pendant la saisie ou après Entrée ; seuls les comptes
+  correspondants restent affichés, avec leurs boutons « Activer » ou « Désactiver ». Effacer le champ rétablit les listes
+  complètes. Si aucun compte ne correspond, la liste affiche « Aucun compte ne correspond à la recherche ». Le champ
+  est atteint à la touche Tab depuis le haut de la page d'administration.
 
 ## 5. Hors périmètre explicite (itération 002)
 

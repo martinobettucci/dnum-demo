@@ -1,3 +1,0 @@
-.                                                                        [100%]
--------- generated xml file: /workspace/iterations/001/tests/junit.xml ---------
-1 passed in 0.20s

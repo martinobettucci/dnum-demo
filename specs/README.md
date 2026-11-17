@@ -7,9 +7,9 @@
 | SPEC-001 | Pile Supabase auto-hébergée et passerelle unique | 002 | CA-002-1, 2, 3, 6, 7, 11, 33 | actif (amendé tour 1 complément : 001.3, 001.4, 001.11 ; tour 2 : 001.15 nouvelle, puis (b) et (d) et policy n° 25, arbitrage 2026-11-17 ; décision 2026-11-17 : 001.15 (d) amendé, (e) ajouté, policy n° 28) |
 | SPEC-002 | Modèle de données, RLS, charge projetée, entraide | 002 | CA-002-4, 6, 8 à 36 | actif |
 | SPEC-003 | Compte administrateur initial et secrets | 002 | CA-002-2, 4, 5, 33 | actif (amendé : 003.9 passe en `[T]`) |
-| SPEC-004 | Piles dev / service, persistance, sauvegarde, contrat `./dev` | 002 | CA-002-1, 2, 33, 36 | actif (amendé tour 1 complément : 004.7 à 004.10, 004.16 ; tour 2 : 004.7 restart (ADR-009), 004.11 env_file longue, 004.17 nouvelle ; tour 2 complément : renommage `secrets.py` → `gen_secrets.py`) |
-| SPEC-005 | Interface web (recette clavier/souris) | 002 | CA-002 [C] | actif |
-| SPEC-006 | Plan de vérification (test / client / policy / RA) | 002 | CA-002-1 à 36 | actif (amendé : §1, §2, §3, §5 ; tour 2 : §2, §3 ; arbitrage 2026-11-17 : CA-002-1 (c) en [P], CA-002-9 avec 005.61, policies renumérotées n° 25 à 27 ; décision 2026-11-17 : §2 CA-002-2, §3 policy n° 28) |
+| SPEC-004 | Piles dev / service, persistance, sauvegarde, contrat `./dev` | 002 | CA-002-1, 2, 33, 36 | actif (amendé tour 1 complément : 004.7 à 004.10, 004.16 ; tour 2 : 004.7 restart (ADR-009), 004.11 env_file longue, 004.17 nouvelle ; tour 2 complément : renommage `secrets.py` → `gen_secrets.py` ; tour 3 : 004.18 nouvelle, ADR-011) |
+| SPEC-005 | Interface web (recette clavier/souris) | 002 | CA-002-5 à 8, 10, 12 à 15, 17 à 19, 21 à 25, 27 à 30, 32, 34, 35 ; tour 3 : 27, 28, 34 précisés ; 37 à 39 proposés | actif (tour 3 : 005.6, 005.7, 005.62, 005.63 nouvelles ; 005.1, 005.33, 005.40, 005.60 amendées ; messages M-1 à M-6) |
+| SPEC-006 | Plan de vérification (test / client / policy / RA) | 002 | CA-002-1 à 36 | actif (amendé : §1, §2, §3, §5 ; tour 2 : §2, §3 ; arbitrage 2026-11-17 : CA-002-1 (c) en [P], CA-002-9 avec 005.61, policies renumérotées n° 25 à 27 ; décision 2026-11-17 : §2 CA-002-2, §3 policy n° 28 ; tour 3 : §2 CA-002-27, 28, 33, 34 et CA-002-37 à 39 proposés, §3 policies n° 29 à 31) |
 
 ## Décisions d'architecture
 | Id | Titre | Statut |
@@ -25,6 +25,7 @@
 | ADR-008 | Tags des images construites localement, propres à chaque pile (`:dev`, `:service`) | accepté |
 | ADR-009 | Redémarrage automatique de toute la pile service (db, auth, rest, app) | accepté (tour 2) ; policy n° 26 |
 | ADR-010 | Vulnérabilités npm transitives de `app/web` : évaluation et décision | **accepté, tranché** (décision 2026-11-17) : esbuild GHSA-67mh-4wv8-2f99 = cas A, non bloquant ; auth-js GHSA-8r88-6cj9-9fh5 = cas A (voie 1), **blocage `deploy service` levé** sous condition de la policy n° 28 ; policies n° 25 et 28 |
+| ADR-011 | Migrations additives et non destructives sur données réelles | accepté (tour 3, 2026-11-17) ; amende SPEC-004.12 par SPEC-004.18 ; policy n° 29 |
 
 Notes :
 - SPEC-000.1 reste valable (`/` répond 200) ; la publication du port est désormais précisée par ADR-007
@@ -130,3 +131,30 @@ d'esbuild vers **0.28.x** (majeure, `build.mjs` et metafile à revalider).
 
 Fichiers modifiés : `specs/adr/ADR-010-vulnerabilites-npm-front.md`, `specs/SPEC-001-pile-supabase.md` (SPEC-001.15),
 `specs/SPEC-006-plan-verification.md` (§2 CA-002-2, §3 policy 28), `specs/README.md`.
+
+## Tour 3 de l'itération 002 (2026-11-17) — retours de recette
+
+Demandé par le chef de projet ; périmètre : specs uniquement. **Aucune mise en service** (pile `dev` gelée).
+
+Décisions :
+- **Retours 1 à 4 traités en front seul** (`app/web/src/app.js`, `app/web/style.css`). **Aucune migration SQL** : les RPC
+  `request_help`, `offer_help`, `admin_list_accounts`, `admin_set_active` sont inchangées.
+  - (1) confirmations exactes après « Demander de l'aide » et « Proposer mon aide », avec nom de tâche : SPEC-005.7, .33, .40 ;
+  - (2) barre supérieure fixe (`sticky`), `scroll-padding-top` : SPEC-005.6 ;
+  - (3) confirmation avant « Désactiver » (bloc inline, pas de modale native) : SPEC-005.63 ;
+  - (4) recherche dans chaque liste d'administration, filtrage côté client : SPEC-005.62.
+  - Textes exacts : section « Messages exacts » de SPEC-005 (M-1 à M-6).
+- **Règle migrations** : SPEC-004.18 et ADR-011 (additives, non destructives, idempotentes ; `001` à `005` figés ;
+  voie d'exception par ADR amendé, accord du chef de projet et sauvegarde préalable).
+- **CA proposés** : CA-002-37 (barre), CA-002-38 (recherche), CA-002-39 (confirmation de désactivation et messages).
+  Le product owner les inscrit au périmètre ; l'architecte ne crée pas de CA.
+
+Nouveaux : `adr/ADR-011-migrations-additives.md`. Amendés : `SPEC-004-piles-dev-service.md` (004.18), `SPEC-005-interface.md`,
+`SPEC-006-plan-verification.md` (§2, §3 policies 29 à 31), `README.md`.
+
+Points ouverts :
+1. Périmètre : inscrire CA-002-37 à 39 (product owner). Sans cela, les specs 005.6, .7, .62, .63 n'ont pas de CA de référence.
+2. Policies 29, 30 et 31 à écrire par `policy` ; le `policy` vérifie que les numéros sont libres.
+3. « Réaffecter » sans message de confirmation, « Loguer du temps » et « Modifier » : même défaut, non spécifiés (décision chef de projet).
+4. Policy 29 : référence git de comparaison des migrations `001`–`005` à consigner dans `mise-en-service.md` au prochain `deploy`.
+5. Recette client de ces retours : à programmer après la levée du gel et un `./dev deploy` (pas de `reset`, SPEC-004.12 / ADR-011).

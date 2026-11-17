@@ -16,6 +16,10 @@ Couvre tous les CA-002-1 à CA-002-36. Chaque CA a au moins un mécanisme de vé
 >
 > **Décision tour 2 (chef de projet, 2026-11-17, ADR-010 voie 1)** : §2 (CA-002-2) et §3 **policy n° 28 `FRONT-auth-js-non-appel`**
 > ajoutée après les 25, 26 et 27 : condition de `./dev deploy service` (SPEC-001.15 (e)). auth-js passe en cas A.
+>
+> **Amendements tour 3 (2026-11-17, retours de recette)** : §2 (CA-002-27, 28, 33, 34 précisés ; CA-002-37, 38, 39 **proposés**,
+> à inscrire au périmètre par le product owner) ; §3 **policies n° 29 `DB-migrations-additives`** (ADR-011, SPEC-004.18),
+> **n° 30 `FRONT-messages-tour3`** et **n° 31 `FRONT-barre-fixe`** (SPEC-005). Numéros supposés libres : le `policy` le vérifie avant d'écrire.
 
 ## 1. Conditions d'exécution des tests automatiques (`testeur`)
 - Exécution : `./dev test` (conteneur `runner`, réseau de la pile dev). Base : `APP_URL=http://app`.
@@ -68,14 +72,17 @@ Couvre tous les CA-002-1 à CA-002-36. Chaque CA a au moins un mécanisme de vé
 | CA-002-24 | 002.13, 005.20 | inactif absent de `team_load` | inscrit non activé absent | — |
 | CA-002-25 | 002.14, 005.33 | `reassign_task` + charges | réaffectation + charges | — |
 | CA-002-26 | 002.14 | vers inactif / par non-affecté ⇒ refus | — | — |
-| CA-002-27 | 002.15, 005.40/50 | `offer_help` + visibilité | « Proposer mon aide » ⇒ reçue chez le collègue | — |
-| CA-002-28 | 002.16, 005.33/50 | `request_help` | « Demander de l'aide » ⇒ reçue | — |
+| CA-002-27 | 002.15, 005.40/50/7 | `offer_help` + visibilité | « Proposer mon aide » ⇒ reçue chez le collègue ; **tour 3 :** message M-1 exact nommant la tâche (005.7) | [P] `FRONT-messages-tour3` (n° 30) |
+| CA-002-28 | 002.16, 005.33/50/7 | `request_help` | « Demander de l'aide » ⇒ reçue ; **tour 3 :** message M-2 exact après validation (005.7, 005.33) | [P] `FRONT-messages-tour3` (n° 30) |
 | CA-002-29 | 002.17, 005.51 | accept ⇒ affectation au preneur | « Accepter » ⇒ statut + charges | — |
 | CA-002-30 | 002.17, 005.51 | refus ⇒ affectation inchangée | « Refuser » ⇒ « Refusée » | — |
 | CA-002-31 | 002.18 | non-destinataire, déjà traitée, tâche réaffectée/terminée ⇒ refus | message « n'est plus valable » | — |
 | CA-002-32 | 002.19, 005.14/20 | compte `pending` | compteur affiché | — |
-| CA-002-33 | 004.3, 003.5 | écrire → redéploiement (R) → relire ; mot de passe admin inchangé | — | [R] `./dev deploy` sans reset entre les deux passes |
-| CA-002-34 (Could) | 002.20, 005.60 | désactivation, auto-désactivation refusée | « Désactiver » ⇒ écran d'attente | — |
+| CA-002-33 | 004.3, 003.5, 004.18 | écrire → redéploiement (R) → relire ; mot de passe admin inchangé | — | [R] `./dev deploy` sans reset entre les deux passes ; [P] `DB-migrations-additives` (n° 29, SPEC-004.18) |
+| CA-002-34 (Could) | 002.20, 005.60/63/7 | désactivation, auto-désactivation refusée | « Désactiver » ⇒ bloc de confirmation (« Annuler » sans effet ; « Confirmer » ⇒ écran d'attente, message M-4) | [P] `FRONT-messages-tour3` (n° 30 : absence de `confirm(`) |
+| CA-002-37 (proposé, tour 3) | 005.6 | — | barre `.entete` visible au défilement molette et clavier (1280×800) | [P] `FRONT-barre-fixe` (n° 31) |
+| CA-002-38 (proposé, tour 3) | 005.60, 005.62 | — | recherche « ecole » ⇒ « École » ; terme sans résultat ⇒ M-5/M-6 ; un champ par liste | [P] `FRONT-messages-tour3` (n° 30 : libellés des champs) |
+| CA-002-39 (proposé, tour 3) | 005.7, 005.63 | — | confirmation avant « Désactiver » ; messages M-1 à M-4 | [P] `FRONT-messages-tour3` (n° 30) |
 | CA-002-35 (Could) | 002.21, 005.21 | filtre `due_date` | filtre « Aujourd'hui » | — |
 | CA-002-36 | 004.7/8/9/16 | backup → reset → restore → relecture (`DEVENV_PILE=service`) | — | [P] `STACK-restart-service` (n° 26, ADR-009) ; [R] isolation des piles (`docker compose ls`, `docker volume ls`, tags distincts) ; [R] `docker inspect` : `unless-stopped` sur db, auth, rest, app |
 
@@ -95,6 +102,20 @@ Couvre tous les CA-002-1 à CA-002-36. Chaque CA a au moins un mécanisme de vé
 13. **(n° 25, ex-13 : collision avec `13-gw-admin-bloque.sh`)** `FRONT-audit-npm` (SPEC-001.15, ADR-010) : `npm audit --json` sur `app/web/package-lock.json` dans l'image `node:22.12.0-alpine` (conteneur jetable, pas d'outil sur l'hôte) ; échec si un identifiant d'avis n'est pas listé dans ADR-010 (attendus : `GHSA-67mh-4wv8-2f99`, `GHSA-8r88-6cj9-9fh5`), si un avis est de sévérité haute ou critique, ou si la commande n'a pu se connecter au registre (statut « non exécutée », jamais « réussie »). Contrôles complémentaires (non bloquants) : recherche de `serve`, `watch`, `context(` dans `app/web/build.mjs` (ADR-010, cas A) ; présence de `meta/vendor-metafile.json` après `./dev build` (C2).
 14. **(n° 27, ex-14 : collision avec `14-gw-csp.sh`)** `DEV-sortie-url` (statique, SPEC-004.17) : `grep -nE '127\.0\.0\.1|localhost|0\.0\.0\.0' dev` ne retourne rien ; `dev` exporte `APP_LAN_IP` sur la même ligne que `APP_PORT`.
 15. **(n° 28, nouvelle, décision tour 2 sur ADR-010 voie 1)** `FRONT-auth-js-non-appel` (statique, SPEC-001.15 (e)) : `grep -rnE '\.admin\.|getUserById|updateUserById|deleteUser|listFactors|deleteFactor' app/web/src` ne retourne aucune ligne. Échec si une occurrence existe ; statut « non exécutée » si la recherche ne peut pas être menée (jamais « réussie »). Résultat consigné dans `iterations/002/policies/` et exigé avant `./dev deploy service`. Hors périmètre : bundle `vendor/supabase.js` (ADR-010, réserve de portée).
+16. **(n° 29, tour 3, ADR-011, SPEC-004.18)** `DB-migrations-additives` (statique, sur `app/db/migrations/`) : (a) aucun
+    `DROP`, `TRUNCATE`, `DELETE`, `RENAME`, `ALTER ... TYPE`, `CREATE TABLE` sans `IF NOT EXISTS` dans les fichiers `NNN ≥ 006` ;
+    (b) chaque `CREATE` / `ADD COLUMN` / `CREATE INDEX` porte `IF NOT EXISTS`, chaque fonction et vue `OR REPLACE`, chaque
+    politique est dans un bloc `DO` gardé ; (c) `001` à `005` identiques à leur version de référence dans git (commit de la
+    dernière mise en service consignée dans `mise-en-service.md`) ; échec si l'un des trois n'est pas vérifiable (statut
+    « non exécutée », jamais « réussie »). Contrôle [R] complémentaire : rejeu hors pile service (ADR-011).
+17. **(n° 30, tour 3, SPEC-005.7, .33, .40, .60, .62, .63)** `FRONT-messages-tour3` (statique, sur `app/web/src/app.js`) :
+    présence exacte des textes M-1 à M-6 et des libellés « Confirmer la désactivation », « Annuler », « Rechercher dans les
+    comptes en attente », « Rechercher dans les comptes actifs » ; absence de la chaîne « Proposition envoyée. » (ancienne
+    forme) et de tout appel `confirm(` ou `alert(` ; `innerHTML` absent. Les textes à variables sont vérifiés par leur
+    gabarit (`{nom}`, `{titre}`, `{terme}`).
+18. **(n° 31, tour 3, SPEC-005.6)** `FRONT-barre-fixe` (statique, sur `app/web/style.css`) : la règle `.entete` contient
+    `position: sticky` ou `position: fixed`, avec `top: 0` ; `html` porte un `scroll-padding-top` non nul ; `.lien-evitement:focus`
+    porte un `z-index` supérieur à celui de `.entete`. Échec si une règle manque ; la vérification de rendu reste [C].
 
 ## 4. Ordre de recette client conseillé
 Connexion admin (CA-5) → inscription A et B + erreurs (CA-6, 7) → connexion A non activé (CA-10)
