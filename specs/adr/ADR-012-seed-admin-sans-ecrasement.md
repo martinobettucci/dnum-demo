@@ -45,7 +45,13 @@ Specs touchées : SPEC-003 (003.5 amendé ; 003.10 à 003.12 nouvelles), SPEC-00
    **Complément (tour 4, 2026-11-17, ADR-013 D-5)** : cette affirmation est incomplète. L'interface ne permet pas de changer
    le mot de passe, mais la passerelle relaie `/auth/v1/*` vers GoTrue sauf `/auth/v1/admin/*` (SPEC-001.6, SPEC-001.7). Un
    `PUT /auth/v1/user` avec le jeton de l'utilisateur atteint donc GoTrue : le canal API existe, il n'est ni spécifié ni testé.
-   Hors périmètre 002 (confirmé). Point ouvert : accepter ce canal ou le fermer (ADR-013, point 2).
+   Hors périmètre 002 (confirmé).
+   **Décision (arbitrage du chef de projet, 2026-11-17, ADR-013 D-5) : canal accepté et documenté pour 002.** Le changement de
+   mot de passe passe par `PUT /auth/v1/user` (chemin standard de Supabase) : chaque utilisateur authentifié change **son propre**
+   mot de passe avec **son** JWT, via la passerelle (`/auth/v1/*` relayé, `/auth/v1/admin/*` bloqué, SPEC-001.7). Ce canal
+   n'a pas d'interface. L'interface « changer mon mot de passe » est inscrite au **backlog 003**. Conséquence pour ce présent
+   ADR : le mot de passe admin peut changer par ce canal, et la base fait foi (§3 et Conséquences). Le contrôle [R] de
+   SPEC-003.10 (étape 2) utilise ce canal.
 
 ## Conséquences
 

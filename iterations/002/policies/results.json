@@ -1,6 +1,6 @@
 {
   "iteration": "002",
-  "date": "2026-11-17T13:36:08",
+  "date": "2026-11-17T13:42:43",
   "pile_demarree": true,
   "results": [
     {
@@ -55,7 +55,7 @@
       "file": "05-env-secrets-valeurs-absentes.sh",
       "status": "respectee",
       "rc": 0,
-      "output": "5 valeur(s) secrète(s) de 2 fichier(s) absentes de 216 fichiers (iterations/ comprises) et de deploy.log"
+      "output": "5 valeur(s) secrète(s) de 2 fichier(s) absentes de 225 fichiers (iterations/ comprises) et de deploy.log"
     },
     {
       "POLICY": "ENV-devenv-ignore",
@@ -185,12 +185,12 @@
     },
     {
       "POLICY": "FRONT-audit-npm",
-      "REF": "SPEC-001.15 (b)(c) | ADR-010 | CA-002-2",
+      "REF": "SPEC-001.15 (b)(c) | ADR-010 | ADR-014 | CA-002-2",
       "QUAND": "always",
       "file": "25-front-audit-npm.sh",
       "status": "respectee",
       "rc": 0,
-      "output": "npm audit (audit-npm.json) : 3 paquet(s) remonté(s), avis listés : GHSA-67mh-4wv8-2f99 (esbuild, cas A (ADR-010)), GHSA-8r88-6cj9-9fh5 (auth-js, cas A voie 1 (ADR-010)) ; aucun haut ni critique ; C2 (metafile) non vérifiée"
+      "output": "npm audit (iterations/002, statut reussie, sha256 du lock concordant) : 3 paquet(s) remonté(s), avis listés : GHSA-67mh-4wv8-2f99 (esbuild, cas A (ADR-010)), GHSA-8r88-6cj9-9fh5 (auth-js, cas A voie 1 (ADR-010)) ; aucun haut ni critique ; build.mjs : aucun serve/watch/context("
     },
     {
       "POLICY": "STACK-restart-service",
@@ -221,7 +221,7 @@
     },
     {
       "POLICY": "DB-migrations-additives",
-      "REF": "SPEC-004.18 | SPEC-004.12 | ADR-011 | CA-002-33",
+      "REF": "SPEC-004.18 | SPEC-004.12 | ADR-011 | ADR-015 | CA-002-33",
       "QUAND": "always",
       "file": "29-db-migrations-additives.sh",
       "status": "respectee",

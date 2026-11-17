@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # POLICY: DB-migrations-additives
-# REF: SPEC-004.18 | SPEC-004.12 | ADR-011 | CA-002-33
+# REF: SPEC-004.18 | SPEC-004.12 | ADR-011 | ADR-015 | CA-002-33
 # QUAND: always
 # Statique sur app/db/migrations/ (ADR-011, décision 1 à 4) :
 #  (a) fichiers NNN >= 006 : aucun DROP, TRUNCATE, DELETE (hors « on delete », « for delete », GRANT/REVOKE),
@@ -8,11 +8,12 @@
 #  (b) CREATE INDEX / TABLE / SCHEMA... avec IF NOT EXISTS ; CREATE FUNCTION / VIEW / TRIGGER avec OR REPLACE ;
 #      ADD COLUMN avec IF NOT EXISTS, sans NOT NULL sans DEFAULT ; chaque CREATE POLICY dans un bloc DO
 #      gardé par pg_policies et IF NOT EXISTS ;
-#  (c) 001 à 005 identiques à leur version de référence dans git (commit « Version de référence » de
-#      iterations/<CURRENT>/mise-en-service.md). Si git ou la référence est indisponible : « non exécutée »,
-#      donc échec (jamais « réussie »).
+#  (c) 001 à 005 identiques, par sha256, à leur version dans la référence git dae9044 (ADR-015 §4-§5, ADR-013 D-3) :
+#      lecture seule uniquement, par « git cat-file -e » puis « git show dae9044:<chemin> » ; aucun git status, diff,
+#      add, rm ou checkout, index non touché (dépôt monté en lecture seule). Si git ou la référence est indisponible :
+#      « non exécutée », donc échec (jamais « réussie »).
 python3 -I - <<'PY'
-import pathlib, re, shutil, subprocess, sys
+import hashlib, pathlib, re, shutil, subprocess, sys
 d = pathlib.Path("/workspace/app/db/migrations")
 if not d.is_dir():
     print("app/db/migrations absent : migrations non vérifiables"); sys.exit(1)
@@ -82,33 +83,30 @@ for p in suivantes:
             bad.append(f"{nom} : CREATE POLICY hors bloc DO gardé par pg_policies")
             break
 
-# (c) 001 à 005 identiques à la référence git
-ref, mes = None, None
-try:
-    it = pathlib.Path("/workspace/iterations/CURRENT").read_text().strip()
-    mes = pathlib.Path(f"/workspace/iterations/{it}/mise-en-service.md").read_text(errors="replace")
-    m = re.search(r"Version de référence[^`\n]*`([0-9a-f]{7,40})`", mes)
-    ref = m.group(1) if m else None
-except OSError:
-    pass
-if ref is None:
-    bad.append("001–005 : référence git introuvable (non exécutée)")
-elif shutil.which("git") is None:
-    bad.append(f"001–005 : git absent du conteneur runner, comparaison à {ref} non exécutée")
+# (c) 001 à 005 identiques par sha256 à la référence dae9044 (ADR-015 §4-§5). Lecture seule.
+REF = "dae9044"
+def sha(b):
+    return hashlib.sha256(b).hexdigest()
+if shutil.which("git") is None:
+    bad.append(f"001–005 : git absent du conteneur runner, comparaison à {REF} non exécutée")
 else:
-    for n in range(1, 6):
-        if n not in par_num:
-            continue
-        p = par_num[n]
-        r = subprocess.run(["git", "-C", "/workspace", "show", f"{ref}:app/db/migrations/{p.name}"],
-                           capture_output=True)
-        if r.returncode != 0:
-            bad.append(f"{p.name} : absent de la référence {ref} (non exécutée)")
-        elif r.stdout != p.read_bytes():
-            bad.append(f"{p.name} modifié par rapport à {ref} (figé, ADR-011)")
+    existe = subprocess.run(["git", "-C", "/workspace", "cat-file", "-e", f"{REF}^{{commit}}"], capture_output=True)
+    if existe.returncode != 0:
+        bad.append(f"001–005 : référence {REF} introuvable (non exécutée)")
+    else:
+        for n in range(1, 6):
+            if n not in par_num:
+                continue
+            p = par_num[n]
+            r = subprocess.run(["git", "-C", "/workspace", "show", f"{REF}:app/db/migrations/{p.name}"],
+                               capture_output=True)
+            if r.returncode != 0:
+                bad.append(f"{p.name} : absent de la référence {REF} (non exécutée)")
+            elif sha(r.stdout) != sha(p.read_bytes()):
+                bad.append(f"{p.name} modifié par rapport à {REF} (figé, ADR-011)")
 
 if bad:
     print("migrations non additives ou non vérifiables : " + " ; ".join(bad)); sys.exit(1)
 pas = f"{len(suivantes)} migration(s) >= 006 additives et idempotentes" if suivantes else "aucune migration >= 006 à contrôler"
-print(f"{pas} ; 001 à 005 identiques à la référence {ref}")
+print(f"{pas} ; 001 à 005 identiques à la référence {REF}")
 PY

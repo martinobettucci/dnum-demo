@@ -4,12 +4,12 @@
 | Id | Titre | Itération | CA couverts | Statut |
 |---|---|---|---|---|
 | SPEC-000 | Socle de l'environnement | 001 | — | actif |
-| SPEC-001 | Pile Supabase auto-hébergée et passerelle unique | 002 | CA-002-1, 2, 3, 6, 7, 11, 33 | actif (amendé tour 1 complément : 001.3, 001.4, 001.11 ; tour 2 : 001.15 nouvelle, puis (b) et (d) et policy n° 25, arbitrage 2026-11-17 ; décision 2026-11-17 : 001.15 (d) amendé, (e) ajouté, policy n° 28 ; tour 4 : 001.15 (b) précisé, audit hors runner, ADR-014) |
+| SPEC-001 | Pile Supabase auto-hébergée et passerelle unique | 002 | CA-002-1, 2, 3, 6, 7, 11, 33 | actif (amendé tour 1 complément : 001.3, 001.4, 001.11 ; tour 2 : 001.15 nouvelle, puis (b) et (d) et policy n° 25, arbitrage 2026-11-17 ; décision 2026-11-17 : 001.15 (d) amendé, (e) ajouté, policy n° 28 ; tour 4 : 001.15 (b) précisé, audit hors runner, ADR-014 ; tour 4 suite : garde esbuild « cas C gardé » dans 001.15 (b) et (d)) |
 | SPEC-002 | Modèle de données, RLS, charge projetée, entraide | 002 | CA-002-4, 6, 8 à 36 | actif |
-| SPEC-003 | Compte administrateur initial et secrets | 002 | CA-002-2, 4, 5, 33 | actif (amendé : 003.9 passe en `[T]` ; tour 3 : 003.5 amendé, 003.10 à 003.12 nouvelles, ADR-012 ; tour 4 : [R] de 003.10 et 003.12 (d) réécrits pour la pile service, ADR-013 D-6) |
-| SPEC-004 | Piles dev / service, persistance, sauvegarde, contrat `./dev` | 002 | CA-002-1, 2, 33, 36 | actif (amendé tour 1 complément : 004.7 à 004.10, 004.16 ; tour 2 : 004.7 restart (ADR-009), 004.11 env_file longue, 004.17 nouvelle ; tour 2 complément : renommage `secrets.py` → `gen_secrets.py` ; tour 3 : 004.18 nouvelle, ADR-011 ; tour 3 : 004.8 et 004.13 amendés, ADR-012) |
+| SPEC-003 | Compte administrateur initial et secrets | 002 | CA-002-2, 4, 5, 33 | actif (amendé : 003.9 passe en `[T]` ; tour 3 : 003.5 amendé, 003.10 à 003.12 nouvelles, ADR-012 ; tour 4 : [R] de 003.10 et 003.12 (d) réécrits pour la pile service, ADR-013 D-6 ; tour 4 suite : canal `PUT /auth/v1/user` documenté dans 003.10, ADR-012 §6) |
+| SPEC-004 | Piles dev / service, persistance, sauvegarde, contrat `./dev` | 002 | CA-002-1, 2, 33, 36 | actif (amendé tour 1 complément : 004.7 à 004.10, 004.16 ; tour 2 : 004.7 restart (ADR-009), 004.11 env_file longue, 004.17 nouvelle ; tour 2 complément : renommage `secrets.py` → `gen_secrets.py` ; tour 3 : 004.18 nouvelle, ADR-011 ; tour 3 : 004.8 et 004.13 amendés, ADR-012 ; tour 4 suite : 004.1 (`./dev audit-npm`, ADR-014)) |
 | SPEC-005 | Interface web (recette clavier/souris) | 002 | CA-002-5 à 8, 10, 12 à 15, 17 à 19, 21 à 25, 27 à 30, 32, 34, 35 ; tour 3 : 27, 28, 34 précisés ; 37 à 39 proposés | actif (tour 3 : 005.6, 005.7, 005.62, 005.63 nouvelles ; 005.1, 005.33, 005.40, 005.60 amendées ; messages M-1 à M-6) |
-| SPEC-006 | Plan de vérification (test / client / policy / RA) | 002 | CA-002-1 à 36 | actif (amendé : §1, §2, §3, §5 ; tour 2 : §2, §3 ; arbitrage 2026-11-17 : CA-002-1 (c) en [P], CA-002-9 avec 005.61, policies renumérotées n° 25 à 27 ; décision 2026-11-17 : §2 CA-002-2, §3 policy n° 28 ; tour 3 : §2 CA-002-27, 28, 33, 34 et CA-002-37 à 39 proposés, §3 policies n° 29 à 31 ; tour 4 : §2 CA-002-1 (écart accepté, ADR-013 D-8), §3 policies 25 et 16 (c) précisées, policy n° 35 proposée, numéros de fichiers explicités) |
+| SPEC-006 | Plan de vérification (test / client / policy / RA) | 002 | CA-002-1 à 36 | actif (amendé : §1, §2, §3, §5 ; tour 2 : §2, §3 ; arbitrage 2026-11-17 : CA-002-1 (c) en [P], CA-002-9 avec 005.61, policies renumérotées n° 25 à 27 ; décision 2026-11-17 : §2 CA-002-2, §3 policy n° 28 ; tour 3 : §2 CA-002-27, 28, 33, 34 et CA-002-37 à 39 proposés, §3 policies n° 29 à 31 ; tour 4 : §2 CA-002-1 (écart accepté, ADR-013 D-8), §3 policies 25 et 16 (c) précisées, policy n° 35 **validée** (item 19), garde esbuild « cas C gardé » (item 13)) |
 
 ## Décisions d'architecture
 | Id | Titre | Statut |
@@ -24,12 +24,12 @@
 | ADR-007 | Publication des ports : une seule adresse LAN par pile (`${APP_LAN_IP}:${APP_PORT}`), runner hors LAN | accepté ; **dérogation CA-002-1 validée par le PO** (perimetre.md, D1) |
 | ADR-008 | Tags des images construites localement, propres à chaque pile (`:dev`, `:service`) | accepté |
 | ADR-009 | Redémarrage automatique de toute la pile service (db, auth, rest, app) | accepté (tour 2) ; policy n° 26 |
-| ADR-010 | Vulnérabilités npm transitives de `app/web` : évaluation et décision | **accepté, tranché** (décision 2026-11-17) : esbuild GHSA-67mh-4wv8-2f99 = cas A, non bloquant ; auth-js GHSA-8r88-6cj9-9fh5 = cas A (voie 1), **blocage `deploy service` levé** sous condition de la policy n° 28 ; policies n° 25 et 28 ; tour 4 : contrôle continu par ADR-014, garde esbuild ouvert (ADR-013 D-1) |
+| ADR-010 | Vulnérabilités npm transitives de `app/web` : évaluation et décision | **accepté, tranché** (décision 2026-11-17) : esbuild GHSA-67mh-4wv8-2f99 = cas A, non bloquant, garde « cas C gardé » (note ; violation policy 25 si `serve`/`watch`/`context`) ; auth-js GHSA-8r88-6cj9-9fh5 = cas A (voie 1), **blocage `deploy service` levé** sous condition de la policy n° 28 ; policies n° 25 et 28 ; contrôle continu par ADR-014 ; aucun point ouvert |
 | ADR-011 | Migrations additives et non destructives sur données réelles | accepté (tour 3, 2026-11-17) ; amende SPEC-004.12 par SPEC-004.18 ; policy n° 29 ; référence de comparaison précisée par ADR-015 |
-| ADR-012 | Seed admin sans écrasement : la base fait foi après création | accepté (tour 3, 2026-11-17) ; amende ADR-003, SPEC-003.5, SPEC-004.8, SPEC-004.13 ; SPEC-003.10 à 003.12 (révisés : 003.10/003.11 vérifiés par stub GoTrue sans deploy) ; §6 complété (tour 4 : canal API, ADR-013 D-5) ; point à vérifier : champ `email_confirmed_at` de GoTrue v2.170.0 (premier contrôle réel au second `deploy service`) |
-| ADR-013 | Trace des décisions du chef de projet (itération 002, 2026-11-17) | accepté (trace) ; D-1 garde esbuild **ouvert** |
+| ADR-012 | Seed admin sans écrasement : la base fait foi après création | accepté (tour 3, 2026-11-17) ; amende ADR-003, SPEC-003.5, SPEC-004.8, SPEC-004.13 ; SPEC-003.10 à 003.12 (révisés : 003.10/003.11 vérifiés par stub GoTrue sans deploy) ; §6 : canal `PUT /auth/v1/user` **accepté et documenté pour 002** (ADR-013 D-5, interface au backlog 003) ; point à vérifier : champ `email_confirmed_at` de GoTrue v2.170.0 (premier contrôle réel au second `deploy service`) |
+| ADR-013 | Trace des décisions du chef de projet (itération 002, 2026-11-17) | accepté (trace) ; D-1 garde esbuild **tranché** (« cas C gardé »), D-5 canal `PUT /auth/v1/user` **accepté** pour 002 ; seul point ouvert : version apt de git (point 6) |
 | ADR-014 | Audit npm produit hors runner (`./dev audit-npm`, sans socket Docker) | accepté ; amende ADR-010 §5, SPEC-001.15 (b), SPEC-006 §3 (policy 25) |
-| ADR-015 | git dans l'image du runner (apt, version exacte) pour la policy 29 | accepté ; amende ADR-011 (référence), SPEC-006 §3 (policy 29, item 16 (c)) ; version apt à relever |
+| ADR-015 | git dans l'image du runner (apt, version exacte) pour la policy 29 | accepté ; amende ADR-011 (référence), SPEC-006 §3 (policy 29, item 16 (c)) ; `dae9044` **vérifié** (existe ; `001` à `005` identiques dans `dfbc020`, `dae9044`, `HEAD`) ; version apt à relever (ouvert) |
 
 Notes :
 - SPEC-000.1 reste valable (`/` répond 200) ; la publication du port est désormais précisée par ADR-007
@@ -213,11 +213,33 @@ Fichiers modifiés : `SPEC-001-pile-supabase.md` (001.15 (b)), `SPEC-003-admin-s
 `adr/ADR-015-git-dans-runner.md`.
 
 **Points ouverts** :
-1. **Chef de projet** : garde esbuild, bloquant ou note (ADR-013 D-1).
-2. **Chef de projet** : canal API de changement de mot de passe, accepter et documenter, ou fermer (ADR-013 D-5).
-3. **Chef de projet** : confirmer le numéro 35 pour la policy `SEED-sans-ecrasement` (SPEC-006 §3, item 19).
-4. **Action** : vérifier que `dae9044` existe et correspond aux fichiers `001` à `005` de `dfbc020` (version déployée sur `dev`), relever la version apt de git (ADR-015).
-5. **Action** : ajouter `./dev audit-npm` à `./dev help` et au contrat SPEC-004.1 (SPEC-004 non modifiée, hors périmètre de cette mission).
+*(Clos le 2026-11-17, voir « Arbitrages du chef de projet, suite » ci-dessous : 1 garde esbuild, 2 canal API, 3 policy 35, 5 `./dev audit-npm`.)*
+1. ~~**Chef de projet** : garde esbuild~~ **Clos** : « cas C gardé ».
+2. ~~**Chef de projet** : canal API~~ **Clos** : `PUT /auth/v1/user` accepté et documenté pour 002 ; interface au backlog 003.
+3. ~~**Chef de projet** : numéro 35~~ **Clos** : policy `SEED-sans-ecrasement` n° 35 validée.
+4. ~~**Action** : `dae9044`~~ **Clos** (vérifié par le chef de projet, ADR-015 §5). Reste ouvert : relever la version apt de git (ADR-015).
+5. ~~**Action** : `./dev audit-npm` dans SPEC-004.1~~ **Clos** : SPEC-004.1 amendé, aide à mettre à jour (ADR-014).
 6. **Policy** : ADR-013 « actions consécutives » (policies 25, 29, 35).
 
 **Actions par équipe** : voir ADR-013, section « Actions consécutives ».
+
+## Arbitrages du chef de projet, suite (2026-11-17)
+
+Décisions (trace : ADR-013, ADR-010, ADR-012, ADR-015, SPEC-001, SPEC-003, SPEC-004, SPEC-006) :
+- **esbuild, garde « cas C gardé »** (ADR-010, ADR-013 D-1) : cas A valable tant que le build n'utilise ni `serve`, ni `watch`,
+  ni `context`. Garde en **note non bloquante** ; occurrence ⇒ policy 25 **violée**, réévaluation obligatoire, blocage de
+  `deploy service` (SPEC-001.15 (b), (d) ; SPEC-006 §3 item 13).
+- **Canal `PUT /auth/v1/user`** (ADR-012 §6, ADR-013 D-5) : accepté et documenté pour 002 (chaque utilisateur change son propre
+  mot de passe avec son JWT, via la passerelle). Interface « changer mon mot de passe » : **backlog 003**.
+- **Policy 35 `SEED-sans-ecrasement`** : numéro validé (SPEC-006 §3 item 19).
+- **`dae9044`** (ADR-015 §5) : existe dans l'historique ; `001` à `005` identiques dans `dfbc020`, `dae9044` et `HEAD`.
+- **`./dev audit-npm`** : ajouté à SPEC-004.1 (liste des commandes, aide `./dev help`, ADR-014).
+
+Fichiers modifiés : `adr/ADR-010`, `adr/ADR-012`, `adr/ADR-013`, `adr/ADR-014`, `adr/ADR-015`, `SPEC-001`, `SPEC-003`,
+`SPEC-004`, `SPEC-006`, `README.md`. Aucun nouveau fichier.
+
+**Backlog itération 003** (le premier point est arbitré ici ; le second est déjà demandé par ADR-010) :
+- Interface « changer mon mot de passe » (utilise `PUT /auth/v1/user`, ADR-012 §6).
+- Montée de `@supabase/supabase-js` (auth-js ≥ 2.70.0) et d'esbuild 0.28.x (ADR-010, points 4 et 5).
+
+**Point ouvert restant** : version apt de git à relever à la première construction de l'image runner (ADR-015, ADR-013 point 6).

@@ -10,7 +10,8 @@ Comportement (ADR-012, création seule) :
   - compte existant, e-mail non confirmé → rc≠0, message sans secret, aucune modification (correction manuelle).
 
 La promotion du profil (role='admin', is_active=true) est faite ensuite par `db.sh promote-admin`.
-N'affiche jamais de secret. Ne lit ni n'écrit le fichier de secrets. Bibliothèque standard uniquement.
+N'affiche jamais de secret, ni l'e-mail complet (masqué : « a***@d*** »), ni le détail d'une exception
+ou d'une réponse HTTP. Ne lit ni n'écrit le fichier de secrets. Bibliothèque standard uniquement.
 """
 import json, os, sys, time, urllib.error, urllib.request
 
@@ -19,6 +20,14 @@ KEY = os.environ["SERVICE_ROLE_KEY"]
 EMAIL = os.environ["ADMIN_EMAIL"].strip().lower()
 PASSWORD = os.environ["ADMIN_PASSWORD"]
 HDR = {"Authorization": f"Bearer {KEY}", "apikey": KEY, "Content-Type": "application/json"}
+
+
+def masque(email):
+    """Identifiant pour les logs : « jean@exemple.org » → « j***@e*** ». Jamais l'adresse complète."""
+    local, _, domaine = email.partition("@")
+    if not local or not domaine:
+        return "***"
+    return f"{local[:1]}***@{domaine[:1]}***"
 
 
 def appel(methode, chemin, corps=None):
@@ -69,14 +78,20 @@ def main():
             "user_metadata": {"display_name": "Administrateur"}})
         if code not in (200, 201):
             sys.exit(f"seed : création du compte administrateur refusée (HTTP {code})")
-        print(f"seed : compte administrateur créé ({EMAIL})")
+        print(f"seed : compte administrateur créé (admin : {masque(EMAIL)})")
         return
     # Compte existant : aucune écriture (ADR-012, SPEC-003.10). Un compte non confirmé est refusé (SPEC-003.11).
     if not (u.get("email_confirmed_at") or u.get("confirmed_at")):
         sys.exit("seed : compte administrateur existant sans e-mail confirmé ; correction manuelle requise "
                  "(aucune modification effectuée)")
-    print(f"seed : compte administrateur existant, inchangé ({EMAIL})")
+    print(f"seed : compte administrateur existant, inchangé (admin : {masque(EMAIL)})")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except SystemExit:
+        raise
+    except Exception as e:
+        # Aucun détail de l'exception : son message peut contenir un corps de réponse ou une valeur.
+        sys.exit(f"seed : erreur inattendue ({type(e).__name__}) ; détail non affiché")

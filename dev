@@ -98,9 +98,26 @@ H
       python3 tools/sponsor/cout.py "/projects/${DEVENV_COST_PROJECT:-$(echo "$ROOT" | sed 's#[/.]#-#g')}" "iterations/$it" tools/sponsor/tarifs.json ;;
   audit-npm)
     # npm audit dans app/web via la toolbox, HORS runner (pas de socket Docker) → iterations/NNN/policies/audit-npm.json (policy 25)
-    it=$(cur); out="iterations/$it/policies/audit-npm.json"; mkdir -p "iterations/$it/policies"
+    # + audit-npm.meta.json (ADR-014 §2) : statut « reussie » si la sortie est un rapport npm valide, même si npm rend rc 1.
+    it=$(cur); dir="iterations/$it/policies"; out="$dir/audit-npm.json"; meta="$dir/audit-npm.meta.json"; mkdir -p "$dir"
     rc=0; (cd app/web && "$ROOT/tools/bin/npm" audit --json) > "$out" || rc=$?
-    echo "audit-npm : $out (rc=$rc)"
+    python3 -I - "$out" "$meta" "$ROOT/app/web/package-lock.json" "node:22.12.0-alpine" <<'PY'
+import datetime, hashlib, json, sys
+rapport, meta, lock, image = sys.argv[1:5]
+def valide(chemin):
+    try:
+        d = json.load(open(chemin, encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return isinstance(d, dict) and "error" not in d and ("vulnerabilities" in d or "auditReportVersion" in d)
+statut = "reussie" if valide(rapport) else "non_executee"
+sha = hashlib.sha256(open(lock, "rb").read()).hexdigest()
+date = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+json.dump({"statut": statut, "package_lock_sha256": sha, "image": image, "date": date},
+          open(meta, "w", encoding="utf-8"), indent=2, ensure_ascii=False)
+open(meta, "a", encoding="utf-8").write("\n")
+PY
+    echo "audit-npm : $out (rc=$rc) ; méta : $meta"
     exit "$rc" ;;
   status) dc --profile client ps ;;
   logs) dc --profile client logs --tail=200 "$@" ;;

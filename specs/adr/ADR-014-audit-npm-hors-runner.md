@@ -56,8 +56,8 @@ Complète : ADR-010 (cadre de l'audit), ADR-002 (dépendances épinglées).
 - **Limite de confiance** : le rapport est produit par l'hôte et lu par le runner. Le sha256 prouve que le rapport
   correspond au lock lu ; il ne prouve pas que l'hôte n'a pas été altéré. C'est un contrôle d'inventaire des
   dépendances, pas une frontière de sécurité.
-- `./dev` : nouvelle commande. Elle doit figurer dans `./dev help` et dans le contrat SPEC-004.1 (point ouvert D-5 de
-  ADR-013). Non fait dans cette mission.
+- `./dev` : nouvelle commande. Elle figure dans `./dev help` et dans le contrat SPEC-004.1 (arbitrage du chef de projet,
+  2026-11-17, ADR-013 point 5 : clos).
 - Le rapport ne contient aucune valeur de secret : il ne lit ni `.devenv/` ni l'environnement.
 
 ## Vérification

@@ -9,7 +9,8 @@ Statut : **accepté, tranché** (itération 002, tour 2). Décision du chef de p
 
 Specs touchées : SPEC-001.15 (b, d amendé, e ajouté), SPEC-006 §2 (CA-002-2, CA-002-36) et §3 (policies 25 et 28).
 Tour 4 (mission du chef de projet, 2026-11-17) : contrôle continu de la policy 25 précisé par ADR-014 (audit hors runner) ;
-garde esbuild : libellé « cas C esbuild gardé » signalé et non tranché (ADR-013 D-1). Classement esbuild inchangé : cas A.
+garde esbuild : **tranché** (arbitrage du chef de projet, 2026-11-17, ADR-013 D-1) : note non bloquante, passage en violée si
+occurrence de `serve`, `watch` ou `context(`, formule « cas C gardé ». Classement esbuild inchangé : cas A.
 Complète ADR-002 (dépendances épinglées).
 
 ## Contexte
@@ -57,8 +58,15 @@ lisible par un site tiers. Ce serveur n'est **jamais démarré** : ni pendant le
 d'exposition de l'avis n'est pas réalisée. Classe **A**.
 
 Réserve : l'ajout de `serve`, `watch` ou `context` dans le build, ou un outil de développement front qui lance esbuild en
-serveur, fait basculer l'avis en **C** et impose une réévaluation. Contrôle à la policy n° 25 : recherche de ces
-motifs dans `app/web/build.mjs` (non bloquant).
+serveur, fait basculer l'avis en **C** et impose une réévaluation.
+
+**Garde esbuild, formule retenue : « cas C gardé » (arbitrage du chef de projet, 2026-11-17, ADR-013 D-1).**
+- Le cas **A** reste valable **tant que** le build n'utilise ni `serve`, ni `watch`, ni `context`.
+- La recherche de ces motifs dans `app/web/build.mjs` (policy n° 25, SPEC-001.15 (b)) est une **note non bloquante** tant
+  qu'elle est négative.
+- Si l'un de ces motifs apparaît, la policy n° 25 passe en **violée** : réévaluation obligatoire de GHSA-67mh-4wv8-2f99,
+  avis en cas C. Tant que la réévaluation n'est pas consignée, `./dev deploy service` est bloqué (SPEC-001.15 (d)).
+  La pile `dev` n'est pas soumise à ce blocage.
 
 **Montée d'esbuild vers 0.28.x : prévue pour l'itération 003** (décision du chef de projet). C'est une version majeure :
 elle se traite comme une nouvelle décision (API de build, `metafile`, `target`, `define`, `legalComments` à revalider ;
@@ -160,8 +168,8 @@ compléter pour lever ce point ; elle n'est pas une condition du classement A re
 4. **Divergence de sources** : `122914` (refus de `docker run`) et `123343` (`npm audit` réussi via le wrapper). Rejouer
    le relevé par la policy n° 25 pour que la preuve soit unique.
 5. **Itération 003** : inscrire au périmètre la montée supabase-js (auth-js ≥ 2.70.0) et esbuild 0.28.x.
-6. **Garde esbuild (tour 4)** : libellé « cas C esbuild gardé » non tranché. Garde bloquant ou note non bloquante (état du
-   code) : décision du chef de projet (ADR-013 D-1). Le classement A est maintenu tant que cette décision n'est pas prise.
+6. ~~**Garde esbuild (tour 4)**~~ **Clos** (arbitrage du chef de projet, 2026-11-17) : note non bloquante, formule « cas C
+   gardé » (section ci-dessus, ADR-013 D-1). Aucun point ouvert sur esbuild.
 
 ## Historique
 
@@ -170,3 +178,5 @@ compléter pour lever ce point ; elle n'est pas une condition du classement A re
 - Tour 2, décision du chef de projet 2026-11-17 : auth-js voie 1 retenue, cas A, blocage levé sous policy 28.
 - Tour 4, mission du chef de projet 2026-11-17 : `BLOQUE_AUTHJS="non"` confirmé (policy 25, ligne 17 ; le relevé de réaction
   « oui » était obsolète) ; audit npm hors runner (ADR-014) ; garde esbuild : libellé « cas C esbuild gardé » signalé, non tranché (ADR-013 D-1).
+- Itération 002, suite, arbitrage du chef de projet (2026-11-17) : garde esbuild tranché en « cas C gardé » (note non bloquante ;
+  violation de la policy 25 si `serve`, `watch` ou `context(` apparaît). Classement esbuild inchangé : cas A.

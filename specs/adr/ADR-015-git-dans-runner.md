@@ -37,9 +37,10 @@ Complète : CLAUDE.md §1 (images et dépendances épinglées), ADR-003 (runner 
 4. **Usage restreint** : la policy 29 (c) n'utilise que `git show <référence>:<chemin>` et compare le sha256 du contenu
    au fichier présent sur disque. Interdits : `git status`, `git diff` et toute commande qui écrit l'index (le dépôt est
    monté en lecture seule).
-5. **Référence de l'itération 002** : commit `dae9044` (décision D-3). La comparaison prouve seulement que `001` à `005`
-   n'ont pas changé depuis `dae9044`. Elle ne prouve pas que ces fichiers sont ceux qui sont appliqués sur `dev`
-   (`dfbc020`). L'action vérifie la correspondance (point ouvert de ADR-013).
+5. **Référence de l'itération 002** : commit `dae9044` (décision D-3). La comparaison prouve que `001` à `005` n'ont pas
+   changé depuis `dae9044`. **Correspondance vérifiée (chef de projet, 2026-11-17)** : `dae9044` existe dans l'historique, et
+   les fichiers `001` à `005` sont identiques dans `dfbc020` (version déployée sur `dev`), `dae9044` et `HEAD`. La référence
+   est donc pertinente pour la version appliquée sur `dev`. Point ouvert de ADR-013 (n° 4) : clos.
 6. **Référence future** : le commit consigné dans `mise-en-service.md` à chaque mise en service (ADR-011). La policy lit
    ce commit ; `dae9044` est la valeur de l'itération 002 uniquement.
 7. **Hôte** : git est déjà requis sur l'hôte (SPEC-004.5). Aucun changement.
